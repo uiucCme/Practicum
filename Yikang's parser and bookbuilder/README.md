@@ -1,16 +1,7 @@
 itch5.0 to csv
 ========
 
-A parser for the NASDAQ ITCH5 Market Information, credit to drhurd/itch4csv
+This is a practice purpose only project for Fall 2016 CME group practicum. It is a parser write in python decode the ITCH5.0 files, and output to csv
 
-
-
-Something to note
-====
-Your processor must be little-endian for this to work, because the numbers are read in byte-by-byte.  Endian independence is coming shortly.
-
-
-
-Usage: ./test [input NASDAQ file] [output CSV file]
-
-Compile with: g++ -O3 -o test main.cpp
+SPY stock locate : "7030"
+Message Event = ['A', 'F', 'E', 'C', 'U', 'D', 'X']
