@@ -1,6 +1,8 @@
 import struct
 import os
 import csv
+import pandas as pd
+import Book_Builder as BB
 from bitstring import BitArray
 from datetime import timedelta
 
@@ -12,6 +14,14 @@ def form_list(list):
             list[position] = list[position].decode("utf-8")
             list[position] = list[position].strip()
     return(list)
+
+
+def complete_result(list):
+    missing = 10 - len(list)
+    while(missing > 0):
+        list += ['NA']
+        missing -= 1
+    return (list)
 
 
 def System_Event_Message(message):
@@ -225,47 +235,54 @@ def ParseMessage(message, messageType):
         return
 
 input = "07292016.NASDAQ_ITCH50"
-time_track = '0:00'
 useful_event_code = ['A', 'F', 'E', 'C', 'U', 'D', 'X']
 input_file = "data/" + input
-f = open(input_file, "rb")
 # decode_filename = "data/" + input + "output.csv"
 orderbook_filename = "data/grouped/" + "SPY.csv"
 # resultFile = open(decode_filename, 'w')
+file = 'SPY'
+orderbook_file_name = "data/order_book/" + file + "_order_book.txt"
+orderbook_detail_file_name = "data/order_book/" + file + "detail.txt"
+data = pd.DataFrame(index=range(0, 1), columns=['EventCode', 'StockLocate', 'Tracking',
+                                                'Time', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6'])
+
+order_book = pd.DataFrame()
+bid = pd.DataFrame(index=range(0, 1))
+ask = pd.DataFrame(index=range(0, 1))
+
+fr = open(input_file, "rb")
+
 resultFile2 = open(orderbook_filename, 'w', newline='')
+wr2 = csv.writer(resultFile2, dialect='excel')
+f = open(orderbook_file_name, "w", newline='')
+wr = csv.writer(f, dialect='excel')
+fd = open(orderbook_detail_file_name, "w", newline='')
+
+
 while(True):
-    byte = f.read(2)
+    byte = fr.read(2)
     if not byte:
         print('Finish Reading(out of byte)')
         break
     message_length = struct.unpack('!H', byte)[0]
-    message = f.read(message_length)
+    message = fr.read(message_length)
     if not message:
         print('Finish Reading(out of message)')
         break
     messageType = chr(message[0])
     RESULT = ParseMessage(message, messageType)
     RESULT = form_list(RESULT)
-    RESULT[3] =  str(timedelta(seconds=RESULT[3]/1e+9))
-    curr_time_split = RESULT[3].split(":")
-    curr_time = curr_time_split[0] + ":" + curr_time_split[1]
-    if curr_time != time_track:
-        print (RESULT[3])
-        #print (RESULT)
-        time_track = curr_time
+    RESULT[3] = str(timedelta(seconds=RESULT[3]/1e+9))
     if any(code == messageType for code in useful_event_code):
         if RESULT[1] == 7030:
             #print(RESULT)
-            wr2 = csv.writer(resultFile2, dialect='excel')
             wr2.writerow(RESULT)
+            data.iloc[0] = complete_result(RESULT)
+            BB.main(data, order_book, bid, ask, fd, wr)
         # wr = csv.writer(resultFile, dialect='excel')
         # wr.writerow(RESULT)
 f.close()
 #resultFile.close()
 resultFile2.close()
-
-'''
-p=Process(target=main(inputfile))
-p.start()
-
-'''
+f.close()
+fd.close()
