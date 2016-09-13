@@ -1,0 +1,35 @@
+#include<iostream>
+#include<fstream>
+#include<string>
+using namespace std;
+
+int main()
+{
+	string row;
+	ifstream f("../spy.csv");
+	int count = 1;
+	ofstream o("1.csv");
+	int filecount = 1;
+	//cout << " Enter Number of Lines to split by: " ;
+	//cin >> noOfLines;
+	int noOfLines = 100000;
+	if(f.is_open())
+	{
+		
+		while(getline(f,row))
+		{
+			if(count%noOfLines==0){
+				++filecount;
+				o.close();
+				o.open(to_string(filecount)+".csv");
+				count = 0;
+			}
+			++count;
+			o << row << endl;
+		}
+	}
+	
+	if(o.is_open())
+		o.close();
+	
+}
