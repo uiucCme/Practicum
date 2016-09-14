@@ -6,8 +6,8 @@ import Book_Builder as BB
 from bitstring import BitArray
 from datetime import timedelta
 
-#os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016/Parser")
-os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/Parser")
+os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016/Parser")
+#os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/Parser")
 def form_list(list):
     for position in range(0,len(list)):
         if type(list[position]) == type(b'byte'):
@@ -236,11 +236,15 @@ def ParseMessage(message, messageType):
 
 input = "07292016.NASDAQ_ITCH50"
 useful_event_code = ['A', 'F', 'E', 'C', 'U', 'D', 'X']
+
+stock_code = 7991  #VXX stock code
+file = 'VXX'
+
 input_file = "data/" + input
-# decode_filename = "data/" + input + "output.csv"
-orderbook_filename = "data/grouped/" + "SPY.csv"
-# resultFile = open(decode_filename, 'w')
-file = 'SPY'
+decode_filename = "data/" + input + "output.txt"
+orderbook_output_filename = "data/grouped/" + file + ".txt"
+
+
 orderbook_file_name = "data/order_book/" + file + "_order_book.txt"
 orderbook_detail_file_name = "data/order_book/" + file + "detail.txt"
 data = pd.DataFrame(index=range(0, 1), columns=['EventCode', 'StockLocate', 'Tracking',
@@ -251,12 +255,15 @@ bid = pd.DataFrame(index=range(0, 1))
 ask = pd.DataFrame(index=range(0, 1))
 
 fr = open(input_file, "rb")
+#resultFile = open(decode_filename, 'w', newline="")
 
-resultFile2 = open(orderbook_filename, 'w', newline='')
-wr2 = csv.writer(resultFile2, dialect='excel')
-f = open(orderbook_file_name, "w", newline='')
+# order book raw file
+f = open(orderbook_output_filename, "w", newline='')
 wr = csv.writer(f, dialect='excel')
-fd = open(orderbook_detail_file_name, "w", newline='')
+
+# order book detail
+# fd = open(orderbook_detail_file_name, "w", newline='')
+
 
 
 while(True):
@@ -273,16 +280,20 @@ while(True):
     RESULT = ParseMessage(message, messageType)
     RESULT = form_list(RESULT)
     RESULT[3] = str(timedelta(seconds=RESULT[3]/1e+9))
-    if any(code == messageType for code in useful_event_code):
-        if RESULT[1] == 7030:
-            #print(RESULT)
-            wr2.writerow(RESULT)
-            data.iloc[0] = complete_result(RESULT)
-            BB.main(data, order_book, bid, ask, fd, wr)
-        # wr = csv.writer(resultFile, dialect='excel')
-        # wr.writerow(RESULT)
+    #wr = csv.writer(resultFile, dialect='excel')
+    #wr.writerow(RESULT)
+
+    if messageType in useful_event_code and RESULT[1] == stock_code:
+        print(RESULT)
+        wr.writerow(RESULT)
+        #data.iloc[0] = complete_result(RESULT)
+        #BB.main(data, order_book, bid, ask, fd, wr)
+        #wr = csv.writer(resultFile, dialect='excel')
+        #wr.writerow(RESULT)
+
+fr.close()
 f.close()
+#f.close()
 #resultFile.close()
-resultFile2.close()
-f.close()
-fd.close()
+#resultFile2.close()
+#fd.close()
