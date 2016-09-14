@@ -92,7 +92,6 @@ for iteration in tqdm(range(0, len(data))):
                                               information['type']]
         fd.write(str(information['time']) + ":" + str(order_book[str(information['id'])][0]) +
                  " shares of order has been added at price " + str(order_book[str(information['id'])][1]))
-        type = 'Order Added'
 
 
     elif message.EventCode == 'F':
@@ -111,41 +110,27 @@ for iteration in tqdm(range(0, len(data))):
                                               information['type']]
         fd.write(str(information['time']) + ":" + str(order_book[str(information['id'])][0]) +
                  " shares of order has been added at price " + str(order_book[str(information['id'])][1]))
-        type = 'Order Added'
 
     elif message.EventCode == 'E':
         information = order_excuted_handler(message)
-        #    print(information['time'] + ": " + str(information['quantity'])
-        #        + " shares of order just executed")
         order_to_delete = str(information['id'])
-        order_book[order_to_delete][0] -= int(float(information['quantity']))
         order_price = str(order_book[order_to_delete][1])
         order_type = str(order_book[order_to_delete][2])
+        #print(information['time'] + ": " + str(information['quantity']) +
+        #     " shares of order just executed at price " + str(order_book[str(information['id'])][1]))
         if order_type == 'B':
-            position = 0
-            for order_price_iterator in bid.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    bid.iloc[0, position] -= int(float(information['quantity']))
-                    if bid.iloc[0, position] <= 0:
-                        bid.drop(bid.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            bid[order_price] -= int(float(information['quantity']))
+            if int(bid[order_price]) <= 0:
+                bid = bid.drop(order_price, 1)
         else:
-            position = 0
-            for order_price_iterator in ask.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    ask.iloc[0, position] -= int(float(information['quantity']))
-                    if ask.iloc[0, position] <= 0:
-                        ask.drop(ask.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            ask[order_price] -= int(float(information['quantity']))
+            if int(ask[order_price]) <= 0:
+                ask = ask.drop(order_price, 1)
         fd.write(information['time'] + ": " + str(information['quantity']) +
                  " shares of order just executed at price " + str(order_book[str(information['id'])][1]))
+        order_book[order_to_delete][0] -= int(float(information['quantity']))
         if order_book[order_to_delete][0] <= 0:
             order_book = order_book.drop(order_to_delete, 1)
-        type = 'Order Executed'
 
     elif message.EventCode == 'C':
         information = price_order_excuted_handler(message)
@@ -156,68 +141,44 @@ for iteration in tqdm(range(0, len(data))):
         order_price = order_book[order_to_delete][1]
         order_type = str(order_book[order_to_delete][2])
         if order_type == 'B':
-            position = 0
-            for order_price_iterator in bid.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    bid.iloc[0, position] -= int(information['quantity'])
-                    if bid.iloc[0, position] <= 0:
-                        bid.drop(bid.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            bid[order_price] -= int(float(information['quantity']))
+            if int(bid[order_price]) <= 0:
+                bid = bid.drop(order_price, 1)
         else:
-            position = 0
-            for order_price_iterator in ask.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    ask.iloc[0, position] -= int(information['quantity'])
-                    if ask.iloc[0, position] <= 0:
-                        ask.drop(ask.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
-            position = 0
+            ask[order_price] -= int(float(information['quantity']))
+            if int(ask[order_price]) <= 0:
+                ask = ask.drop(order_price, 1)
         fd.write(information['time'] + ": " + str(information['quantity']) +
                  " shares of order just executed at price " + str(order_book[str(information['id'])][1]))
         if order_book[order_to_delete][0] <= 0:
             order_book = order_book.drop(order_to_delete, 1)
-        type = 'Order Executed'
 
     elif message.EventCode == 'U':
         information = replace_order_handler(message)
         #    print(str(information['time'])+ ": " + str(information['quantity']) +
         #          " shares of order has been replaced")
-        old_quantity = int(float(order_book[str(information['id'])][0]))
-        old_price = str(order_book[str(information['id'])][1])
-        old_type = order_book[str(information['id'])][2]
-        order_book[str(information['newid'])] = [int(float(information['quantity'])), information['price'], old_type]
         old_order_id = str(information['id'])
+        old_quantity = int(order_book[old_order_id][0])
+        old_price = str(order_book[old_order_id][1])
+        old_type = order_book[old_order_id][2]
         new_order_id = str(information['newid'])
         new_price = str(information['price'])
         new_quantity = int(float(information['quantity']))
-        if order_type == 'B':
-            position = 0
-            for order_price_iterator in bid.columns.values.tolist():
-                if order_price_iterator == old_price:
-                    bid.iloc[0, position] -= old_quantity
-                    if bid.iloc[0, position] <= 0:
-                        bid.drop(bid.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+        order_book[str(information['newid'])] = [new_quantity, new_price, old_type]
+        order_book = order_book.drop(old_order_id, 1)
+
+        if old_type == 'B':
+            bid[old_price] -= old_quantity
+            if int(bid[old_price]) <= 0:
+                bid = bid.drop(old_price, 1)
             if str(new_price) in bid.columns.values.tolist():
                 bid[new_price] += new_quantity
             else:
                 bid[new_price] = new_quantity
         else:
-            position = 0
-            for order_price_iterator in ask.columns.values.tolist():
-                if order_price_iterator == old_price:
-                    ask.iloc[0, position] -= old_quantity
-                    if ask.iloc[0, position] <= 0:
-                        ask.drop(ask.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            ask[old_price] -= old_quantity
+            if int(ask[old_price]) <= 0:
+                ask = ask.drop(old_price, 1)
             if str(new_price) in ask.columns.values.tolist():
                 ask[new_price] += new_quantity
             else:
@@ -227,8 +188,6 @@ for iteration in tqdm(range(0, len(data))):
                  " shares of order at price " + str(old_price) +
                  " has been replaced as " + str(new_quantity) + " shares of order at price " +
                  str(new_price))
-        order_book = order_book.drop(str(information['id']), 1)
-        type = 'Order Replaced'
 
 
     elif message.EventCode == 'D':
@@ -238,29 +197,16 @@ for iteration in tqdm(range(0, len(data))):
         order_price = str(order_book[order_to_delete][1])
         order_type = str(order_book[order_to_delete][2])
         if order_type == 'B':
-            position = 0
-            for order_price_iterator in bid.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    bid.iloc[0, position] -= delete_quantity
-                    if bid.iloc[0, position] <= 0:
-                        bid.drop(bid.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            bid[order_price] -= delete_quantity
+            if int(bid[order_price]) <= 0:
+                bid = bid.drop(order_price, 1)
         else:
-            position = 0
-            for order_price_iterator in ask.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    ask.iloc[0, position] -= delete_quantity
-                    if ask.iloc[0, position] <= 0:
-                        ask.drop(ask.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            ask[order_price] -= delete_quantity
+            if int(ask[order_price]) <= 0:
+                ask = ask.drop(order_price, 1)
         fd.write(str(information['time']) + ":" + str(order_book[str(information['id'])][0]) +
                  " shares of order has been deleted at price " + str(order_book[str(information['id'])][1]))
         order_book = order_book.drop(order_to_delete, 1)
-        type = 'Order Deleted'
 
     elif message.EventCode == 'X':
         information = canel_order_handler(message)
@@ -271,34 +217,22 @@ for iteration in tqdm(range(0, len(data))):
         order_price = str(order_book[order_to_delete][1])
         order_type = str(order_book[order_to_delete][2])
         if order_type == 'B':
-            position = 0
-            for order_price_iterator in bid.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    bid.iloc[0, position] -= int(float(information['quantity']))
-                    if bid.iloc[0, position] <= 0:
-                        bid.drop(bid.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            bid[order_price] -= int(float(information['quantity']))
+            if int(bid[order_price]) <= 0:
+                bid = bid.drop(order_price, 1)
         else:
-            position = 0
-            for order_price_iterator in ask.columns.values.tolist():
-                if order_price_iterator == order_price:
-                    ask.iloc[0, position] -= int(float(information['quantity']))
-                    if ask.iloc[0, position] <= 0:
-                        ask.drop(ask.columns.values[position], axis=1, inplace=True)
-                        break
-                    break
-                position += 1
+            ask[order_price] -= int(float(information['quantity']))
+            if int(ask[order_price]) <= 0:
+                ask = ask.drop(order_price, 1)
         fd.write(information['time'] + ": " + str(information['quantity']) +
                  " shares of order just canceled  at price " + str(order_book[str(information['id'])][1]))
         if order_book[order_to_delete][0] <= 0:
             order_book = order_book.drop(order_to_delete, 1)
-        type = 'Order Canceled'
 
     else:
         print('Wrong Message Type!')
 
+    type = message.EventCode
     bid = bid.reindex_axis([str(j) for j in sorted(float(i) for i in bid.columns)], axis=1)
     ask = ask.reindex_axis([str(j) for j in sorted(float(i) for i in ask.columns)], axis=1)
     # print()
