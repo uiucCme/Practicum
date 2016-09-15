@@ -3,8 +3,8 @@ import os
 import csv
 from tqdm import *
 
-#os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016/Parser")
-os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/Parser")
+os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016/Parser")
+# os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/Parser")
 
 
 def add_order_handler(message):
@@ -68,7 +68,7 @@ bid = pd.DataFrame(index=range(0, 1))
 ask = pd.DataFrame(index=range(0, 1))
 order_book = pd.DataFrame(index=range(0, 3))
 
-orderbook_file_name = "data/order_book/" + file + "_order_book.txt"
+orderbook_file_name = "I:/" + file + "_order_book.txt"
 orderbook_detail_file_name = "data/order_book/" + file + "detail.txt"
 f = open(orderbook_file_name, "w", newline='')
 fd = open(orderbook_detail_file_name, "w", newline='')
@@ -134,11 +134,9 @@ for iteration in tqdm(range(0, len(data))):
 
     elif message.EventCode == 'C':
         information = price_order_excuted_handler(message)
-        #    print(information['time'] + ": " + str(information['quantity']) +
-        #          " shares of order just executed as price of " + str(information['price']))
         order_to_delete = str(information['id'])
         order_book[order_to_delete][0] -= int(float(information['quantity']))
-        order_price = order_book[order_to_delete][1]
+        order_price = str(order_book[order_to_delete][1])
         order_type = str(order_book[order_to_delete][2])
         if order_type == 'B':
             bid[order_price] -= int(float(information['quantity']))
@@ -148,10 +146,11 @@ for iteration in tqdm(range(0, len(data))):
             ask[order_price] -= int(float(information['quantity']))
             if int(ask[order_price]) <= 0:
                 ask = ask.drop(order_price, 1)
-        fd.write(information['time'] + ": " + str(information['quantity']) +
-                 " shares of order just executed at price " + str(information['price']))
         if order_book[order_to_delete][0] <= 0:
             order_book = order_book.drop(order_to_delete, 1)
+        fd.write(information['time'] + ": " + str(information['quantity']) +
+                 " shares of order just executed at price " + str(information['price']))
+
 
     elif message.EventCode == 'U':
         information = replace_order_handler(message)
@@ -160,7 +159,7 @@ for iteration in tqdm(range(0, len(data))):
         old_order_id = str(information['id'])
         old_quantity = int(order_book[old_order_id][0])
         old_price = str(order_book[old_order_id][1])
-        old_type = order_book[old_order_id][2]
+        old_type = str(order_book[old_order_id][2])
         new_order_id = str(information['newid'])
         new_price = str(information['price'])
         new_quantity = int(float(information['quantity']))
@@ -188,7 +187,6 @@ for iteration in tqdm(range(0, len(data))):
                  " shares of order at price " + str(old_price) +
                  " has been replaced as " + str(new_quantity) + " shares of order at price " +
                  str(new_price))
-
 
     elif message.EventCode == 'D':
         information = delete_order_handler(message)
