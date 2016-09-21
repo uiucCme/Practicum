@@ -2,11 +2,15 @@ import struct
 import os
 import pandas as pd
 import numpy as np
-from bitstring import BitArray
+from tqdm import *
 from datetime import timedelta
+import timeit
 
-os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
-# os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/Parser")
+
+#os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
+
+
+os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
 
 def find_name(code):
     return (code_map.loc[code_map['Stock Locate'] == code].iloc[0, 1])
@@ -27,15 +31,12 @@ def complete_result(list):
         missing -= 1
     return (list)
 
-
 def System_Event_Message(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!c", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6sc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
     array[-1] = chr(ord(array[-1]))
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
-    array_df = pd.DataFrame(np_array,
+    np_array = np.array(array).reshape((1, len(array)))
+    array_df = pd.DataFrame(form_list(np_array),
                             index=range(1),
                             columns=['Message Type',
                                      'Stock Locate',
@@ -46,11 +47,9 @@ def System_Event_Message(message):
 
 
 def Stock_Directory(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!8sccIcc2scccccIc", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6s8sccIcc2scccccIc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -75,11 +74,9 @@ def Stock_Directory(message):
 
 
 def Stock_Trading(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!8scc4s", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6s8scc4s", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -94,11 +91,9 @@ def Stock_Trading(message):
 
 
 def Reg_SHO(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!8sc", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6s8sc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -110,13 +105,10 @@ def Reg_SHO(message):
     return (array_df)
 
 
-
 def Market_Participant_Position(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!4s8sccc", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6s4s8sccc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -131,13 +123,10 @@ def Market_Participant_Position(message):
     return (array_df)
 
 
-
 def MWCB_Decline(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QQQ", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQQQ", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -151,11 +140,9 @@ def MWCB_Decline(message):
 
 
 def MWCB_Status(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!c", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -167,11 +154,9 @@ def MWCB_Status(message):
 
 
 def IPOUpdate(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!8sIcI", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6s8cIcI", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -186,12 +171,10 @@ def IPOUpdate(message):
 
 
 def Add_Order(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QcI8sI", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQcI8cI", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -207,12 +190,10 @@ def Add_Order(message):
 
 
 def Add_MPID_Order(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QcI8sI4s", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQcI8sI4s", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -227,12 +208,11 @@ def Add_MPID_Order(message):
                                      'Attribution'])
     return (array_df)
 
+
 def Excueted_Order(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QIQ", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQIQ", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -246,12 +226,10 @@ def Excueted_Order(message):
 
 
 def Excueted_Price_Order(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QIQcI", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQIQcI", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -267,11 +245,9 @@ def Excueted_Price_Order(message):
 
 
 def Order_Cancel(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QI", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQI", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -284,11 +260,9 @@ def Order_Cancel(message):
 
 
 def Order_Delete(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!Q", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQ", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -299,14 +273,11 @@ def Order_Delete(message):
     return (array_df)
 
 
-
 def Order_Replace(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QQII", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQQII", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
     array[7] = array[7] / 10000
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -320,13 +291,10 @@ def Order_Replace(message):
     return (array_df)
 
 
-
 def Trade(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QcIQIQ", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQcIQIQ", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -343,11 +311,9 @@ def Trade(message):
 
 
 def Cross_Trade(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!Q8sIQc", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
-    np_array = np.array(form_list(array)).reshape((1,len(array)))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQ8sIQc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -363,10 +329,9 @@ def Cross_Trade(message):
 
 
 def Broken_Trade(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!Q", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQ", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -378,10 +343,9 @@ def Broken_Trade(message):
 
 
 def NOII(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!QQc8sIIIcc", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQQc8sIIIcc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -401,10 +365,9 @@ def NOII(message):
 
 
 def RPII(message):
-    array1 = [chr(message[0])] + list(struct.unpack("!HH", message[1:5]))
-    b = BitArray(bytes=message[5:11])
-    array2 = list(struct.unpack("!8sc", message[11:len(message)]))
-    array = array1 + b.unpack('uintbe:48') + array2
+    array = [chr(message[0])] + list(struct.unpack("!HH6s8sc", message[1:]))
+    array[3] = int.from_bytes(array[3], byteorder='big')
+    np_array = np.array(form_list(array)).reshape((1, len(array)))
     array_df = pd.DataFrame(np_array,
                             index=range(1),
                             columns=['Message Type',
@@ -462,29 +425,76 @@ def ParseMessage(message, messageType):
         return
 
 
+# total line number: 281719135
 code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t')
-store = pd.HDFStore('store.h5')
+# create a data frame dictionary to store your data frames
+store = pd.HDFStore('data/HDF5/store.h5',"w", complevel=9, complib='zlib')
 input = "07292016.NASDAQ_ITCH50"
 input_file = "data/" + input
 fr = open(input_file, "rb")
-while (True):
-    byte = fr.read(2)
-    if not byte:
-        print('Finish Reading(out of byte)')
-        break
-    message_length = struct.unpack('!H', byte)[0]
-    message = fr.read(message_length)
-    if not message:
-        print('Finish Reading(out of message)')
-        break
-    messageType = chr(message[0])
-    RESULT = ParseMessage(message, messageType)
-    store_code = find_name(int(RESULT['Stock Locate'][0])).replace("-", "")
-    print(RESULT['Message Type'])
-    try:
-        store[store_code] = pd.merge(store[store_code], RESULT, how='outer')
-    except:
-        store[store_code] = RESULT
+index = range(200000)
+columns = ['Level 1', 'Issue Subtype', 'MPID',
+           'Market Maker Mode', 'IPO Quotation Release Qualifier',
+           'Current Reference Price', 'Round Lot Size', 'Paired Shares',
+           'Message Type', 'Price Variation Indicator', 'Cross Type',
+           'Tracing Number', 'Authenticity', 'Far price', 'Level 3',
+           'Interest Flag', 'Order Reference Number', 'Reason', 'Cross Price',
+           'Trading State', 'Bereached Level', 'Inverse Indicator',
+           'ETP Leverage Factor', 'IPO Flag', 'LUID Reference Price Tier',
+           'Near Price', 'Time Stamp', 'Round Lots Only', 'Level 2',
+           'Imbalance Shares', 'Reserved', 'Executed Shares',
+           'IPO Quotation Release Time', 'Reg SHO Action',
+           'Original Order Reference Number', 'ETP Flag', 'IPO Price',
+           'Buy/Sell Indicator', 'Shares', 'Canceled Shares', 'Stock',
+           'New Order Reference Number', 'Market Category',
+           'Short Sale Threshold Indicator', 'Financial Status Indicator',
+           'Printable', 'Price', 'Market Participant State',
+           'Imbalance Direction', 'Attribution', 'Execution Price',
+           'Primary Market Maker', 'Event Code', 'Issue Classification',
+           'Match Number', 'Stock Locate']
 
+empty_df = pd.DataFrame(index=index, columns=columns)
 
+for COUNTER in trange(int(281719135 / 200000) + 1):
+    DataFrameDict = {}
+    for counter in trange(0, 200000):
+        byte = fr.read(2)
+        if not byte:
+            print('Finish Reading(out of byte)')
+            break
+        message_length = struct.unpack('!H', byte)[0]
+        message = fr.read(message_length)
+        if not message:
+            print('Finish Reading(out of message)')
+            break
+        messageType = chr(message[0])
+        RESULT = ParseMessage(message, messageType)
+        store_code = find_name(int(RESULT['Stock Locate'][0])).replace("-", "")
+        try:
+            DataFrameDict[store_code] = DataFrameDict[store_code].append(RESULT)
+        except:
+            DataFrameDict[store_code] = RESULT
+
+    for key in tqdm(DataFrameDict.keys()):
+        try:
+            store[key] = store[key].append(DataFrameDict[key])
+        except:
+            store[key] = DataFrameDict[key]
+    print(str(timedelta(seconds=store['SPY'] / 1e+9)))
+    del DataFrameDict
+
+store.close()
 fr.close()
+
+'''
+x=[]
+start_time = time.time()
+for i in range(100000):
+    x.append([1,2,3])
+print("--- %s seconds ---" % (time.time() - start_time))
+start_time = time.time()
+for i in range(100000):
+    x = np.array([1,2,3]).reshape((1, len(array))
+print("--- %s seconds ---" % (time.time() - start_time))
+'''
+
