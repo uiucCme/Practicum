@@ -1,0 +1,39 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep 06 21:44:42 2016
+
+@author: Adarsh Shetty
+"""
+
+#import numpy as np
+import csv
+#import matplotlib.pyplot as plt
+#import os
+
+
+'''
+This code can be used to extract individual ticker data from the parsed data
+file for NASDAQ ITCH containing all tickers.
+The libraries used here is csv.
+'''
+
+# Specify the location of consolidated data file here
+parsed_data = open('C:\\Users\\PATH\\parsed_data.csv','rb');
+reader = csv.reader(parsed_data);
+out_file = open('VXX.csv','wb');
+
+# Finding the stock location numnber of the security we are interested in
+# My parsed data file is 8 strings long and hence 5 spaces after VXX
+# Adjust your string search condition accordingly
+for row1 in reader:
+    if row1[0] == 'A' and row1[7] == 'VXX     ':
+        stock_locate = row1[1];
+        break;
+
+writer = csv.writer(out_file);
+# Writing ticker content into csv file
+for row in reader:
+    if row[1] == stock_locate:
+        writer.writerow(row)
+        
+out_file.close()
