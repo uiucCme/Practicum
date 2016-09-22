@@ -2,15 +2,42 @@ import struct
 import os
 import pandas as pd
 import numpy as np
+import multiprocessing
+from multiprocessing import Process
+import threading
 from tqdm import *
 from datetime import timedelta
-import timeit
 
-
-#os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
+# os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
 
 
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
+def clean_name(input_name):
+    input_name = input_name.replace('.', "")
+    input_name = input_name.replace("-", "minus")
+    input_name = input_name.replace('+', 'plus').replace('*', "star")
+    input_name = input_name.replace('=', 'equal').replace('#', "pound")
+    return(input_name)
+
+
+def write_hdf5(DataFrameDict):
+    lock.acquire()
+    for key in tqdm(DataFrameDict.keys()):
+        try:
+            store[key] = store[key].append(
+                pd.DataFrame(DataFrameDict[key], columns=columns))
+        except:
+            store[key] = pd.DataFrame(DataFrameDict[key], columns=columns)
+    print(str(timedelta(seconds=store['AAPL']['Time Stamp'][0] / 1e+9)))
+    lock.release()
+
+
+def find_index(a):
+    result = []
+    for x in a:
+        result.append(columns.index(x))
+    return (result)
+
 
 def find_name(code):
     return (code_map.loc[code_map['Stock Locate'] == code].iloc[0, 1])
@@ -31,352 +58,274 @@ def complete_result(list):
         missing -= 1
     return (list)
 
+
 def System_Event_Message(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[-1] = chr(ord(array[-1]))
-    np_array = np.array(array).reshape((1, len(array)))
-    array_df = pd.DataFrame(form_list(np_array),
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Event Code'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = System_Event_Message_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Stock_Directory(message):
-    array = [chr(message[0])] + list(struct.unpack("!HH6s8sccIcc2scccccIc", message[1:]))
+    array = [chr(message[0])] + \
+                 list(struct.unpack("!HH6s8sccIcc2scccccIc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Stock',
-                                     'Market Category',
-                                     'Financial Status Indicator',
-                                     'Round Lot Size',
-                                     'Round Lots Only',
-                                     'Issue Classification',
-                                     'Issue Subtype',
-                                     'Authenticity',
-                                     'Short Sale Threshold Indicator',
-                                     'IPO Flag',
-                                     'LUID Reference Price Tier',
-                                     'ETP Flag',
-                                     'ETP Leverage Factor',
-                                     'Inverse Indicator'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Stock_Directory_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Stock_Trading(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8scc4s", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Stock',
-                                     'Trading State',
-                                     'Reserved',
-                                     'Reason'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Stock_Trading_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Reg_SHO(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8sc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Stock',
-                                     'Reg SHO Action'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Reg_SHO_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Market_Participant_Position(message):
-    array = [chr(message[0])] + list(struct.unpack("!HH6s4s8sccc", message[1:]))
+    array = [chr(message[0])] + \
+                 list(struct.unpack("!HH6s4s8sccc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'MPID',
-                                     'Stock',
-                                     'Primary Market Maker',
-                                     'Market Maker Mode',
-                                     'Market Participant State'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Market_Participant_Position_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def MWCB_Decline(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQQQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Level 1',
-                                     'Level 2',
-                                     'Level 3'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = MWCB_Decline_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def MWCB_Status(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Bereached Level'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = MWCB_Status_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def IPOUpdate(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8cIcI", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Stock',
-                                     'IPO Quotation Release Time',
-                                     'IPO Quotation Release Qualifier',
-                                     'IPO Price'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = IPOUpdate_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Add_Order(message):
-    array = [chr(message[0])] + list(struct.unpack("!HH6sQcI8cI", message[1:]))
+    array = [chr(message[0])] + list(struct.unpack("!HH6sQcI8sI", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Order Reference Number',
-                                     'Buy/Sell Indicator',
-                                     'Shares',
-                                     'Stock',
-                                     'Price'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Add_Order_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Add_MPID_Order(message):
-    array = [chr(message[0])] + list(struct.unpack("!HH6sQcI8sI4s", message[1:]))
+    array = [chr(message[0])] + \
+                 list(struct.unpack("!HH6sQcI8sI4s", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Order Reference Number',
-                                     'Buy/Sell Indicator',
-                                     'Shares',
-                                     'Stock',
-                                     'Price',
-                                     'Attribution'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Add_MPID_Order_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Excueted_Order(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQIQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Order Reference Number',
-                                     'Executed Shares',
-                                     'Match Number'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Excueted_Order_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Excueted_Price_Order(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQIQcI", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Order Reference Number',
-                                     'Executed Shares',
-                                     'Match Number',
-                                     'Printable',
-                                     'Execution Price'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Excueted_Price_Order_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Order_Cancel(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQI", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Order Reference Number',
-                                     'Canceled Shares'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Order_Cancel_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Order_Delete(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Order Reference Number'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Order_Delete_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Order_Replace(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQQII", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[7] = array[7] / 10000
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Original Order Reference Number',
-                                     'New Order Reference Number',
-                                     'Shares',
-                                     'Price'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Order_Replace_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQcIQIQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Order Reference Number',
-                                     'Buy/Sell Indicator',
-                                     'Shares',
-                                     'Stock',
-                                     'Price',
-                                     'Match Number'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Trade_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Cross_Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQ8sIQc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Shares',
-                                     'Stock',
-                                     'Cross Price',
-                                     'Match Number',
-                                     'Cross Type'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Cross_Trade_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def Broken_Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Match Number'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = Broken_Trade_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def NOII(message):
-    array = [chr(message[0])] + list(struct.unpack("!HH6sQQc8sIIIcc", message[1:]))
+    array = [chr(message[0])] + \
+                 list(struct.unpack("!HH6sQQc8sIIIcc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Paired Shares',
-                                     'Imbalance Shares',
-                                     'Imbalance Direction',
-                                     'Stock',
-                                     'Far price',
-                                     'Near Price',
-                                     'Current Reference Price',
-                                     'Cross Type',
-                                     'Price Variation Indicator'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = NOII_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def RPII(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8sc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
-    np_array = np.array(form_list(array)).reshape((1, len(array)))
-    array_df = pd.DataFrame(np_array,
-                            index=range(1),
-                            columns=['Message Type',
-                                     'Stock Locate',
-                                     'Tracing Number',
-                                     'Time Stamp',
-                                     'Stock',
-                                     'Interest Flag'])
-    return (array_df)
+    array = form_list(array)
+    complete_array = [''] * 56
+    array_index = RPII_index
+    p = 0
+    for i in array_index:
+        complete_array[i] = array[p]
+        p += 1
+    return (complete_array)
 
 
 def ParseMessage(message, messageType):
@@ -425,39 +374,223 @@ def ParseMessage(message, messageType):
         return
 
 
+columns = ['Attribution', 'Authenticity', 'Bereached Level',
+           'Buy/Sell Indicator', 'Canceled Shares', 'Cross Price',
+           'Cross Type', 'Current Reference Price', 'ETP Flag',
+           'ETP Leverage Factor', 'Event Code', 'Executed Shares',
+           'Execution Price', 'Far price', 'Financial Status Indicator',
+           'IPO Flag', 'IPO Price', 'IPO Quotation Release Qualifier',
+           'IPO Quotation Release Time', 'Imbalance Direction', 'Imbalance Shares',
+           'Interest Flag', 'Inverse Indicator', 'Issue Classification',
+           'Issue Subtype', 'LUID Reference Price Tier', 'Level 1',
+           'Level 2', 'Level 3', 'MPID',
+           'Market Category', 'Market Maker Mode', 'Market Participant State',
+           'Match Number', 'Message Type', 'Near Price',
+           'New Order Reference Number', 'Order Reference Number', 'Original Order Reference Number',
+           'Paired Shares', 'Price', 'Price Variation Indicator',
+           'Primary Market Maker', 'Printable', 'Reason',
+           'Reg SHO Action', 'Reserved', 'Round Lot Size',
+           'Round Lots Only', 'Shares', 'Short Sale Threshold Indicator',
+           'Stock', 'Stock Locate', 'Time Stamp',
+           'Tracking Number', 'Trading State']
+
+System_Event_Message_index = find_index(['Message Type',
+                                         'Stock Locate',
+                                         'Tracking Number',
+                                         'Time Stamp',
+                                         'Event Code'])
+
+Stock_Directory_index = find_index(['Message Type',
+                                    'Stock Locate',
+                                    'Tracking Number',
+                                    'Time Stamp',
+                                    'Stock',
+                                    'Market Category',
+                                    'Financial Status Indicator',
+                                    'Round Lot Size',
+                                    'Round Lots Only',
+                                    'Issue Classification',
+                                    'Issue Subtype',
+                                    'Authenticity',
+                                    'Short Sale Threshold Indicator',
+                                    'IPO Flag',
+                                    'LUID Reference Price Tier',
+                                    'ETP Flag',
+                                    'ETP Leverage Factor',
+                                    'Inverse Indicator'])
+
+Stock_Trading_index = find_index(['Message Type',
+                                  'Stock Locate',
+                                  'Tracking Number',
+                                  'Time Stamp',
+                                  'Stock',
+                                  'Trading State',
+                                  'Reserved',
+                                  'Reason'])
+
+Reg_SHO_index = find_index(['Message Type',
+                            'Stock Locate',
+                            'Tracking Number',
+                            'Time Stamp',
+                            'Stock',
+                            'Reg SHO Action'])
+
+Market_Participant_Position_index = find_index(['Message Type',
+                                                'Stock Locate',
+                                                'Tracking Number',
+                                                'Time Stamp',
+                                                'MPID',
+                                                'Stock',
+                                                'Primary Market Maker',
+                                                'Market Maker Mode',
+                                                'Market Participant State'])
+
+MWCB_Decline_index = find_index(['Message Type',
+                                 'Stock Locate',
+                                 'Tracking Number',
+                                 'Time Stamp',
+                                 'Level 1',
+                                 'Level 2',
+                                 'Level 3'])
+
+MWCB_Status_index = find_index(['Message Type',
+                                'Stock Locate',
+                                'Tracking Number',
+                                'Time Stamp',
+                                'Bereached Level'])
+
+IPOUpdate_index = find_index(['Message Type',
+                              'Stock Locate',
+                              'Tracking Number',
+                              'Time Stamp',
+                              'Stock',
+                              'IPO Quotation Release Time',
+                              'IPO Quotation Release Qualifier',
+                              'IPO Price'])
+
+Add_Order_index = find_index(['Message Type',
+                              'Stock Locate',
+                              'Tracking Number',
+                              'Time Stamp',
+                              'Order Reference Number',
+                              'Buy/Sell Indicator',
+                              'Shares',
+                              'Stock',
+                              'Price'])
+
+Add_MPID_Order_index = find_index(['Message Type',
+                                   'Stock Locate',
+                                   'Tracking Number',
+                                   'Time Stamp',
+                                   'Order Reference Number',
+                                   'Buy/Sell Indicator',
+                                   'Shares',
+                                   'Stock',
+                                   'Price',
+                                   'Attribution'])
+
+Excueted_Order_index = find_index(['Message Type',
+                                   'Stock Locate',
+                                   'Tracking Number',
+                                   'Time Stamp',
+                                   'Order Reference Number',
+                                   'Executed Shares',
+                                   'Match Number'])
+
+Excueted_Price_Order_index = find_index(['Message Type',
+                                         'Stock Locate',
+                                         'Tracking Number',
+                                         'Time Stamp',
+                                         'Order Reference Number',
+                                         'Executed Shares',
+                                         'Match Number',
+                                         'Printable',
+                                         'Execution Price'])
+
+Order_Cancel_index = find_index(['Message Type',
+                                 'Stock Locate',
+                                 'Tracking Number',
+                                 'Time Stamp',
+                                 'Order Reference Number',
+                                 'Canceled Shares'])
+
+Order_Delete_index = find_index(['Message Type',
+                                 'Stock Locate',
+                                 'Tracking Number',
+                                 'Time Stamp',
+                                 'Order Reference Number'])
+
+Order_Replace_index = find_index(['Message Type',
+                                  'Stock Locate',
+                                  'Tracking Number',
+                                  'Time Stamp',
+                                  'Original Order Reference Number',
+                                  'New Order Reference Number',
+                                  'Shares',
+                                  'Price'])
+
+Trade_index = find_index(['Message Type',
+                          'Stock Locate',
+                          'Tracking Number',
+                          'Time Stamp',
+                          'Order Reference Number',
+                          'Buy/Sell Indicator',
+                          'Shares',
+                          'Stock',
+                          'Price',
+                          'Match Number'])
+
+Cross_Trade_index = find_index(['Message Type',
+                                'Stock Locate',
+                                'Tracking Number',
+                                'Time Stamp',
+                                'Shares',
+                                'Stock',
+                                'Cross Price',
+                                'Match Number',
+                                'Cross Type'])
+
+Broken_Trade_index = find_index(['Message Type',
+                                 'Stock Locate',
+                                 'Tracking Number',
+                                 'Time Stamp',
+                                 'Match Number'])
+
+NOII_index = find_index(['Message Type',
+                         'Stock Locate',
+                         'Tracking Number',
+                         'Time Stamp',
+                         'Paired Shares',
+                         'Imbalance Shares',
+                         'Imbalance Direction',
+                         'Stock',
+                         'Far price',
+                         'Near Price',
+                         'Current Reference Price',
+                         'Cross Type',
+                         'Price Variation Indicator'])
+
+RPII_index = find_index(['Message Type',
+                         'Stock Locate',
+                         'Tracking Number',
+                         'Time Stamp',
+                         'Stock',
+                         'Interest Flag'])
+
 # total line number: 281719135
 code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t')
 # create a data frame dictionary to store your data frames
-store = pd.HDFStore('data/HDF5/store.h5',"w", complevel=9, complib='zlib')
+store = pd.HDFStore('data/HDF5/store.h5', "w", complevel=9, complib='zlib')
 input = "07292016.NASDAQ_ITCH50"
 input_file = "data/" + input
 fr = open(input_file, "rb")
-index = range(200000)
-columns = ['Level 1', 'Issue Subtype', 'MPID',
-           'Market Maker Mode', 'IPO Quotation Release Qualifier',
-           'Current Reference Price', 'Round Lot Size', 'Paired Shares',
-           'Message Type', 'Price Variation Indicator', 'Cross Type',
-           'Tracing Number', 'Authenticity', 'Far price', 'Level 3',
-           'Interest Flag', 'Order Reference Number', 'Reason', 'Cross Price',
-           'Trading State', 'Bereached Level', 'Inverse Indicator',
-           'ETP Leverage Factor', 'IPO Flag', 'LUID Reference Price Tier',
-           'Near Price', 'Time Stamp', 'Round Lots Only', 'Level 2',
-           'Imbalance Shares', 'Reserved', 'Executed Shares',
-           'IPO Quotation Release Time', 'Reg SHO Action',
-           'Original Order Reference Number', 'ETP Flag', 'IPO Price',
-           'Buy/Sell Indicator', 'Shares', 'Canceled Shares', 'Stock',
-           'New Order Reference Number', 'Market Category',
-           'Short Sale Threshold Indicator', 'Financial Status Indicator',
-           'Printable', 'Price', 'Market Participant State',
-           'Imbalance Direction', 'Attribution', 'Execution Price',
-           'Primary Market Maker', 'Event Code', 'Issue Classification',
-           'Match Number', 'Stock Locate']
+stock_locate_index = find_index(['Stock Locate'])[0]
 
-empty_df = pd.DataFrame(index=index, columns=columns)
+lock = multiprocessing.Lock()
 
-for COUNTER in trange(int(281719135 / 200000) + 1):
+for COUNTER in trange(int(281719135 / 10000000) + 1):
     DataFrameDict = {}
-    for counter in trange(0, 200000):
+    for counter in trange(0, 10000000):
         byte = fr.read(2)
         if not byte:
             print('Finish Reading(out of byte)')
@@ -469,19 +602,21 @@ for COUNTER in trange(int(281719135 / 200000) + 1):
             break
         messageType = chr(message[0])
         RESULT = ParseMessage(message, messageType)
-        store_code = find_name(int(RESULT['Stock Locate'][0])).replace("-", "")
+        store_code = clean_name(find_name(int(RESULT[stock_locate_index])))
         try:
-            DataFrameDict[store_code] = DataFrameDict[store_code].append(RESULT)
+            DataFrameDict[store_code].append(RESULT)
         except:
-            DataFrameDict[store_code] = RESULT
-
-    for key in tqdm(DataFrameDict.keys()):
-        try:
-            store[key] = store[key].append(DataFrameDict[key])
-        except:
-            store[key] = DataFrameDict[key]
-    print(str(timedelta(seconds=store['SPY'] / 1e+9)))
+            DataFrameDict[store_code] = []
+            DataFrameDict[store_code].append(RESULT)
+    try:
+        IO_process.join()
+    except:
+        print('No need to wait IO process!\n')
+    temp_dict = DataFrameDict.copy()
     del DataFrameDict
+    IO_process = Process(target=write_hdf5, args=(temp_dict,))
+    IO_process.start()
+    # write_hdf5(temp_dict)
 
 store.close()
 fr.close()
@@ -490,11 +625,15 @@ fr.close()
 x=[]
 start_time = time.time()
 for i in range(100000):
-    x.append([1,2,3])
+    np_array = ['']*56
+    index = [34,52,54,53,10]
+    p = 0
+    for i in index:
+        np_array[i] = array[p]
+        p+=1
 print("--- %s seconds ---" % (time.time() - start_time))
 start_time = time.time()
 for i in range(100000):
     x = np.array([1,2,3]).reshape((1, len(array))
 print("--- %s seconds ---" % (time.time() - start_time))
 '''
-
