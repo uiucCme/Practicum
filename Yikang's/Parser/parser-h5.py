@@ -593,7 +593,7 @@ stock_symbol_index = find_index(['Stock'])[0]
 chunk_size = 10000
 lock = multiprocessing.Lock()
 empty_df = pd.DataFrame(index=range(chunk_size), columns=columns)
-for COUNTER in trange(1):
+for COUNTER in trange(int(281719135/chunk_size)+1):
     DataFrameDict = {}
     for counter in trange(0, chunk_size):
         byte = fr.read(2)
