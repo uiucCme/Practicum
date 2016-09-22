@@ -22,14 +22,18 @@ def clean_name(input_name):
 
 def write_hdf5(DataFrameDict):
     lock.acquire()
+    store = pd.HDFStore('data/HDF5/store.h5', "a", complevel=9, complib='zlib')
     for key in tqdm(DataFrameDict.keys()):
+        temp_df = pd.DataFrame(DataFrameDict[key], columns=columns).replace("", np.nan, inplace=True)
         try:
-            store[key] = store[key].append(
-                pd.DataFrame(DataFrameDict[key], columns=columns))
+            store[key] = store[key].append(temp_df)
         except:
-            store[key] = pd.DataFrame(DataFrameDict[key], columns=columns)
-    print(str(timedelta(seconds=store['AAPL']['Time Stamp'][0] / 1e+9)))
+            store[key] = pd.DataFrame(temp_df)
+    #print(str(timedelta(seconds=store['AAPL']['Time Stamp'][0] / 1e+9)))
+    store.close()
+    del temp_dict
     lock.release()
+
 
 
 def find_index(a):
@@ -580,17 +584,18 @@ RPII_index = find_index(['Message Type',
 # total line number: 281719135
 code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t')
 # create a data frame dictionary to store your data frames
-store = pd.HDFStore('data/HDF5/store.h5', "w", complevel=9, complib='zlib')
+#store = pd.HDFStore('data/HDF5/store.h5', "w", complevel=9, complib='zlib')
 input = "07292016.NASDAQ_ITCH50"
 input_file = "data/" + input
 fr = open(input_file, "rb")
 stock_locate_index = find_index(['Stock Locate'])[0]
-
+stock_symbol_index = find_index(['Stock'])[0]
+chunk_size = 10000
 lock = multiprocessing.Lock()
-
-for COUNTER in trange(int(281719135 / 10000000) + 1):
+empty_df = pd.DataFrame(index=range(chunk_size), columns=columns)
+for COUNTER in trange(1):
     DataFrameDict = {}
-    for counter in trange(0, 10000000):
+    for counter in trange(0, chunk_size):
         byte = fr.read(2)
         if not byte:
             print('Finish Reading(out of byte)')
@@ -608,17 +613,21 @@ for COUNTER in trange(int(281719135 / 10000000) + 1):
         except:
             DataFrameDict[store_code] = []
             DataFrameDict[store_code].append(RESULT)
+
+    temp_dict = DataFrameDict.copy()
+    #del DataFrameDict
+    #write_hdf5(temp_dict)
+
     try:
         IO_process.join()
     except:
         print('No need to wait IO process!\n')
-    temp_dict = DataFrameDict.copy()
     del DataFrameDict
     IO_process = Process(target=write_hdf5, args=(temp_dict,))
     IO_process.start()
-    # write_hdf5(temp_dict)
 
-store.close()
+    # write_hdf5(temp_dict)
+print('Finish Writing!')
 fr.close()
 
 '''
