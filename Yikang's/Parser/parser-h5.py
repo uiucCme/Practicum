@@ -4,14 +4,13 @@ import pandas as pd
 import numpy as np
 import multiprocessing
 from multiprocessing import Process
-import threading
 from tqdm import *
 from datetime import timedelta
 
-# os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
 
 
-os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
+
+
 def clean_name(input_name):
     input_name = input_name.replace('.', "")
     input_name = input_name.replace("-", "minus")
@@ -22,25 +21,17 @@ def clean_name(input_name):
 
 def write_hdf5(DataFrameDict):
     lock.acquire()
-<<<<<<< Updated upstream
-    store = pd.HDFStore('data/HDF5/store.h5', "a", complevel=9, complib='zlib')
     for key in tqdm(DataFrameDict.keys()):
-        temp_df = pd.DataFrame(DataFrameDict[key], columns=columns).replace("", np.nan, inplace=True)
-        try:
-            store[key] = store[key].append(temp_df)
-=======
-    for key in DataFrameDict.keys():
-        try:
-            store[key] = store[key].append(pd.DataFrame(DataFrameDict[key], columns=columns))
->>>>>>> Stashed changes
-        except:
-            store[key] = pd.DataFrame(temp_df)
-    #print(str(timedelta(seconds=store['AAPL']['Time Stamp'][0] / 1e+9)))
-    store.close()
-    del temp_dict
+        temp_df = pd.DataFrame(DataFrameDict[key], columns=columns).replace("", np.nan)
+        temp_df.to_hdf('data/HDF5/store_grouped.h5',
+                       key,
+                       mode="a",
+                       data_columns=True,
+                       complevel=9,
+                       complib='zlib',
+                       format='table')
+    # print(str(timedelta(seconds=store['AAPL']['Time Stamp'][0] / 1e+9)))
     lock.release()
-
-
 
 def find_index(a):
     result = []
@@ -380,268 +371,264 @@ def ParseMessage(message, messageType):
     elif messageType == 'N':
         return (RPII(message))
     else:
-        print('message type not found!')
+        print('Message_Type not found!')
         return
 
 
-columns = ['Attribution', 'Authenticity', 'Bereached Level',
-           'Buy/Sell Indicator', 'Canceled Shares', 'Cross Price',
-           'Cross Type', 'Current Reference Price', 'ETP Flag',
-           'ETP Leverage Factor', 'Event Code', 'Executed Shares',
-           'Execution Price', 'Far price', 'Financial Status Indicator',
-           'IPO Flag', 'IPO Price', 'IPO Quotation Release Qualifier',
-           'IPO Quotation Release Time', 'Imbalance Direction', 'Imbalance Shares',
-           'Interest Flag', 'Inverse Indicator', 'Issue Classification',
-           'Issue Subtype', 'LUID Reference Price Tier', 'Level 1',
-           'Level 2', 'Level 3', 'MPID',
-           'Market Category', 'Market Maker Mode', 'Market Participant State',
-           'Match Number', 'Message Type', 'Near Price',
-           'New Order Reference Number', 'Order Reference Number', 'Original Order Reference Number',
-           'Paired Shares', 'Price', 'Price Variation Indicator',
-           'Primary Market Maker', 'Printable', 'Reason',
-           'Reg SHO Action', 'Reserved', 'Round Lot Size',
-           'Round Lots Only', 'Shares', 'Short Sale Threshold Indicator',
-           'Stock', 'Stock Locate', 'Time Stamp',
-           'Tracking Number', 'Trading State']
+columns = ['Attribution', 'Authenticity', 'Bereached_Level',
+           'Buy_Sell_Indicator', 'Canceled_Shares', 'Cross_Price',
+           'Cross_Type', 'Current_Reference_Price', 'ETP_Flag',
+           'ETP_Leverage_Factor', 'Event_Code', 'Executed_Shares',
+           'Execution_Price', 'Far_price', 'Financial_Status_Indicator',
+           'IPO_Flag', 'IPO_Price', 'IPO_Quotation_Release_Qualifier',
+           'IPO_Quotation_Release_Time', 'Imbalance_Direction', 'Imbalance_Shares',
+           'Interest_Flag', 'Inverse_Indicator', 'Issue_Classification',
+           'Issue_Subtype', 'LUID_Reference_Price_Tier', 'Level_1',
+           'Level_2', 'Level_3', 'MPID',
+           'Market_Category', 'Market_Maker_Mode', 'Market_Participant_State',
+           'Match_Number', 'Message_Type', 'Near_Price',
+           'New_Order_Reference_Number', 'Order_Reference_Number', 'Original_Order_Reference_Number',
+           'Paired_Shares', 'Price', 'Price_Variation_Indicator',
+           'Primary_Market_Maker', 'Printable', 'Reason',
+           'Reg_SHO_Action', 'Reserved', 'Round_Lot_Size',
+           'Round_Lots_Only', 'Shares', 'Short_Sale_Threshold_Indicator',
+           'Stock', 'Stock_Locate', 'Time_Stamp',
+           'Tracking_Number', 'Trading_State']
 
-System_Event_Message_index = find_index(['Message Type',
-                                         'Stock Locate',
-                                         'Tracking Number',
-                                         'Time Stamp',
-                                         'Event Code'])
+System_Event_Message_index = find_index(['Message_Type',
+                                         'Stock_Locate',
+                                         'Tracking_Number',
+                                         'Time_Stamp',
+                                         'Event_Code'])
 
-Stock_Directory_index = find_index(['Message Type',
-                                    'Stock Locate',
-                                    'Tracking Number',
-                                    'Time Stamp',
+Stock_Directory_index = find_index(['Message_Type',
+                                    'Stock_Locate',
+                                    'Tracking_Number',
+                                    'Time_Stamp',
                                     'Stock',
-                                    'Market Category',
-                                    'Financial Status Indicator',
-                                    'Round Lot Size',
-                                    'Round Lots Only',
-                                    'Issue Classification',
-                                    'Issue Subtype',
+                                    'Market_Category',
+                                    'Financial_Status_Indicator',
+                                    'Round_Lot_Size',
+                                    'Round_Lots_Only',
+                                    'Issue_Classification',
+                                    'Issue_Subtype',
                                     'Authenticity',
-                                    'Short Sale Threshold Indicator',
-                                    'IPO Flag',
-                                    'LUID Reference Price Tier',
-                                    'ETP Flag',
-                                    'ETP Leverage Factor',
-                                    'Inverse Indicator'])
+                                    'Short_Sale_Threshold_Indicator',
+                                    'IPO_Flag',
+                                    'LUID_Reference_Price_Tier',
+                                    'ETP_Flag',
+                                    'ETP_Leverage_Factor',
+                                    'Inverse_Indicator'])
 
-Stock_Trading_index = find_index(['Message Type',
-                                  'Stock Locate',
-                                  'Tracking Number',
-                                  'Time Stamp',
+Stock_Trading_index = find_index(['Message_Type',
+                                  'Stock_Locate',
+                                  'Tracking_Number',
+                                  'Time_Stamp',
                                   'Stock',
-                                  'Trading State',
+                                  'Trading_State',
                                   'Reserved',
                                   'Reason'])
 
-Reg_SHO_index = find_index(['Message Type',
-                            'Stock Locate',
-                            'Tracking Number',
-                            'Time Stamp',
+Reg_SHO_index = find_index(['Message_Type',
+                            'Stock_Locate',
+                            'Tracking_Number',
+                            'Time_Stamp',
                             'Stock',
-                            'Reg SHO Action'])
+                            'Reg_SHO_Action'])
 
-Market_Participant_Position_index = find_index(['Message Type',
-                                                'Stock Locate',
-                                                'Tracking Number',
-                                                'Time Stamp',
+Market_Participant_Position_index = find_index(['Message_Type',
+                                                'Stock_Locate',
+                                                'Tracking_Number',
+                                                'Time_Stamp',
                                                 'MPID',
                                                 'Stock',
-                                                'Primary Market Maker',
-                                                'Market Maker Mode',
-                                                'Market Participant State'])
+                                                'Primary_Market_Maker',
+                                                'Market_Maker_Mode',
+                                                'Market_Participant_State'])
 
-MWCB_Decline_index = find_index(['Message Type',
-                                 'Stock Locate',
-                                 'Tracking Number',
-                                 'Time Stamp',
-                                 'Level 1',
-                                 'Level 2',
-                                 'Level 3'])
+MWCB_Decline_index = find_index(['Message_Type',
+                                 'Stock_Locate',
+                                 'Tracking_Number',
+                                 'Time_Stamp',
+                                 'Level_1',
+                                 'Level_2',
+                                 'Level_3'])
 
-MWCB_Status_index = find_index(['Message Type',
-                                'Stock Locate',
-                                'Tracking Number',
-                                'Time Stamp',
-                                'Bereached Level'])
+MWCB_Status_index = find_index(['Message_Type',
+                                'Stock_Locate',
+                                'Tracking_Number',
+                                'Time_Stamp',
+                                'Bereached_Level'])
 
-IPOUpdate_index = find_index(['Message Type',
-                              'Stock Locate',
-                              'Tracking Number',
-                              'Time Stamp',
+IPOUpdate_index = find_index(['Message_Type',
+                              'Stock_Locate',
+                              'Tracking_Number',
+                              'Time_Stamp',
                               'Stock',
-                              'IPO Quotation Release Time',
-                              'IPO Quotation Release Qualifier',
-                              'IPO Price'])
+                              'IPO_Quotation_Release_Time',
+                              'IPO_Quotation_Release_Qualifier',
+                              'IPO_Price'])
 
-Add_Order_index = find_index(['Message Type',
-                              'Stock Locate',
-                              'Tracking Number',
-                              'Time Stamp',
-                              'Order Reference Number',
-                              'Buy/Sell Indicator',
+Add_Order_index = find_index(['Message_Type',
+                              'Stock_Locate',
+                              'Tracking_Number',
+                              'Time_Stamp',
+                              'Order_Reference_Number',
+                              'Buy_Sell_Indicator',
                               'Shares',
                               'Stock',
                               'Price'])
 
-Add_MPID_Order_index = find_index(['Message Type',
-                                   'Stock Locate',
-                                   'Tracking Number',
-                                   'Time Stamp',
-                                   'Order Reference Number',
-                                   'Buy/Sell Indicator',
+Add_MPID_Order_index = find_index(['Message_Type',
+                                   'Stock_Locate',
+                                   'Tracking_Number',
+                                   'Time_Stamp',
+                                   'Order_Reference_Number',
+                                   'Buy_Sell_Indicator',
                                    'Shares',
                                    'Stock',
                                    'Price',
                                    'Attribution'])
 
-Excueted_Order_index = find_index(['Message Type',
-                                   'Stock Locate',
-                                   'Tracking Number',
-                                   'Time Stamp',
-                                   'Order Reference Number',
-                                   'Executed Shares',
-                                   'Match Number'])
+Excueted_Order_index = find_index(['Message_Type',
+                                   'Stock_Locate',
+                                   'Tracking_Number',
+                                   'Time_Stamp',
+                                   'Order_Reference_Number',
+                                   'Executed_Shares',
+                                   'Match_Number'])
 
-Excueted_Price_Order_index = find_index(['Message Type',
-                                         'Stock Locate',
-                                         'Tracking Number',
-                                         'Time Stamp',
-                                         'Order Reference Number',
-                                         'Executed Shares',
-                                         'Match Number',
+Excueted_Price_Order_index = find_index(['Message_Type',
+                                         'Stock_Locate',
+                                         'Tracking_Number',
+                                         'Time_Stamp',
+                                         'Order_Reference_Number',
+                                         'Executed_Shares',
+                                         'Match_Number',
                                          'Printable',
-                                         'Execution Price'])
+                                         'Execution_Price'])
 
-Order_Cancel_index = find_index(['Message Type',
-                                 'Stock Locate',
-                                 'Tracking Number',
-                                 'Time Stamp',
-                                 'Order Reference Number',
-                                 'Canceled Shares'])
+Order_Cancel_index = find_index(['Message_Type',
+                                 'Stock_Locate',
+                                 'Tracking_Number',
+                                 'Time_Stamp',
+                                 'Order_Reference_Number',
+                                 'Canceled_Shares'])
 
-Order_Delete_index = find_index(['Message Type',
-                                 'Stock Locate',
-                                 'Tracking Number',
-                                 'Time Stamp',
-                                 'Order Reference Number'])
+Order_Delete_index = find_index(['Message_Type',
+                                 'Stock_Locate',
+                                 'Tracking_Number',
+                                 'Time_Stamp',
+                                 'Order_Reference_Number'])
 
-Order_Replace_index = find_index(['Message Type',
-                                  'Stock Locate',
-                                  'Tracking Number',
-                                  'Time Stamp',
-                                  'Original Order Reference Number',
-                                  'New Order Reference Number',
+Order_Replace_index = find_index(['Message_Type',
+                                  'Stock_Locate',
+                                  'Tracking_Number',
+                                  'Time_Stamp',
+                                  'Original_Order_Reference_Number',
+                                  'New_Order_Reference_Number',
                                   'Shares',
                                   'Price'])
 
-Trade_index = find_index(['Message Type',
-                          'Stock Locate',
-                          'Tracking Number',
-                          'Time Stamp',
-                          'Order Reference Number',
-                          'Buy/Sell Indicator',
+Trade_index = find_index(['Message_Type',
+                          'Stock_Locate',
+                          'Tracking_Number',
+                          'Time_Stamp',
+                          'Order_Reference_Number',
+                          'Buy_Sell_Indicator',
                           'Shares',
                           'Stock',
                           'Price',
-                          'Match Number'])
+                          'Match_Number'])
 
-Cross_Trade_index = find_index(['Message Type',
-                                'Stock Locate',
-                                'Tracking Number',
-                                'Time Stamp',
+Cross_Trade_index = find_index(['Message_Type',
+                                'Stock_Locate',
+                                'Tracking_Number',
+                                'Time_Stamp',
                                 'Shares',
                                 'Stock',
-                                'Cross Price',
-                                'Match Number',
-                                'Cross Type'])
+                                'Cross_Price',
+                                'Match_Number',
+                                'Cross_Type'])
 
-Broken_Trade_index = find_index(['Message Type',
-                                 'Stock Locate',
-                                 'Tracking Number',
-                                 'Time Stamp',
-                                 'Match Number'])
+Broken_Trade_index = find_index(['Message_Type',
+                                 'Stock_Locate',
+                                 'Tracking_Number',
+                                 'Time_Stamp',
+                                 'Match_Number'])
 
-NOII_index = find_index(['Message Type',
-                         'Stock Locate',
-                         'Tracking Number',
-                         'Time Stamp',
-                         'Paired Shares',
-                         'Imbalance Shares',
-                         'Imbalance Direction',
+NOII_index = find_index(['Message_Type',
+                         'Stock_Locate',
+                         'Tracking_Number',
+                         'Time_Stamp',
+                         'Paired_Shares',
+                         'Imbalance_Shares',
+                         'Imbalance_Direction',
                          'Stock',
-                         'Far price',
-                         'Near Price',
-                         'Current Reference Price',
-                         'Cross Type',
-                         'Price Variation Indicator'])
+                         'Far_price',
+                         'Near_Price',
+                         'Current_Reference_Price',
+                         'Cross_Type',
+                         'Price_Variation_Indicator'])
 
-RPII_index = find_index(['Message Type',
-                         'Stock Locate',
-                         'Tracking Number',
-                         'Time Stamp',
+RPII_index = find_index(['Message_Type',
+                         'Stock_Locate',
+                         'Tracking_Number',
+                         'Time_Stamp',
                          'Stock',
-                         'Interest Flag'])
+                         'Interest_Flag'])
 
-# total line number: 281719135
-code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t')
-# create a data frame dictionary to store your data frames
-#store = pd.HDFStore('data/HDF5/store.h5', "w", complevel=9, complib='zlib')
-input = "07292016.NASDAQ_ITCH50"
-input_file = "data/" + input
-fr = open(input_file, "rb")
-stock_locate_index = find_index(['Stock Locate'])[0]
-stock_symbol_index = find_index(['Stock'])[0]
-chunk_size = 10000
-lock = multiprocessing.Lock()
-<<<<<<< Updated upstream
-empty_df = pd.DataFrame(index=range(chunk_size), columns=columns)
-for COUNTER in trange(int(281719135/chunk_size)+1):
-    DataFrameDict = {}
-    for counter in trange(0, chunk_size):
-=======
+if __name__ == "__main__":
+    # os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
+    os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
+    # total line number: 281719135
+    code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t')
+    # create a data frame dictionary to store your data frames
+    #store = pd.HDFStore('data/HDF5/store.h5', "w", complevel=9, complib='zlib')
+    input = "07292016.NASDAQ_ITCH50"
+    input_file = "data/" + input
+    fr = open(input_file, "rb")
+    stock_locate_index = find_index(['Stock_Locate'])[0]
+    stock_symbol_index = find_index(['Stock'])[0]
+    chunk_size = 1000000
+    lock = multiprocessing.Lock()
+    empty_df = pd.DataFrame(index=range(chunk_size), columns=columns)
+    for COUNTER in trange(int(281719135/chunk_size)+1):
+        DataFrameDict = {}
+        for counter in trange(0, chunk_size):
+            byte = fr.read(2)
+            if not byte:
+                print('Finish Reading(out of byte)')
+                break
+            message_length = struct.unpack('!H', byte)[0]
+            message = fr.read(message_length)
+            if not message:
+                print('Finish Reading(out of message)')
+                break
+            messageType = chr(message[0])
+            RESULT = ParseMessage(message, messageType)
+            store_code = clean_name(find_name(int(RESULT[stock_locate_index])))
+            try:
+                DataFrameDict[store_code].append(RESULT)
+            except:
+                DataFrameDict[store_code] = []
+                DataFrameDict[store_code].append(RESULT)
 
-for COUNTER in trange(int(281719135 / 100000) + 1):
-    DataFrameDict = {}
-    for counter in trange(0, 100000):
->>>>>>> Stashed changes
-        byte = fr.read(2)
-        if not byte:
-            print('Finish Reading(out of byte)')
-            break
-        message_length = struct.unpack('!H', byte)[0]
-        message = fr.read(message_length)
-        if not message:
-            print('Finish Reading(out of message)')
-            break
-        messageType = chr(message[0])
-        RESULT = ParseMessage(message, messageType)
-        store_code = clean_name(find_name(int(RESULT[stock_locate_index])))
+        temp_dict = DataFrameDict.copy()
+        #del DataFrameDict
+        #write_hdf5(temp_dict)
+
         try:
-            DataFrameDict[store_code].append(RESULT)
+            IO_process.join()
         except:
-            DataFrameDict[store_code] = []
-            DataFrameDict[store_code].append(RESULT)
+            print('No need to wait IO process!\n')
+        del DataFrameDict
+        IO_process = Process(target=write_hdf5, args=(temp_dict,))
+        IO_process.start()
 
-    temp_dict = DataFrameDict.copy()
-    #del DataFrameDict
-    #write_hdf5(temp_dict)
-
-    try:
-        IO_process.join()
-    except:
-        print('No need to wait IO process!\n')
-    del DataFrameDict
-    IO_process = Process(target=write_hdf5, args=(temp_dict,))
-    IO_process.start()
-
-    # write_hdf5(temp_dict)
-print('Finish Writing!')
-fr.close()
+        # write_hdf5(temp_dict)
+    print('Finish Writing!')
+    fr.close()
 
 '''
 x=[]
