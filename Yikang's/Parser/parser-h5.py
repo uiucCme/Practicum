@@ -22,11 +22,17 @@ def clean_name(input_name):
 
 def write_hdf5(DataFrameDict):
     lock.acquire()
+<<<<<<< Updated upstream
     store = pd.HDFStore('data/HDF5/store.h5', "a", complevel=9, complib='zlib')
     for key in tqdm(DataFrameDict.keys()):
         temp_df = pd.DataFrame(DataFrameDict[key], columns=columns).replace("", np.nan, inplace=True)
         try:
             store[key] = store[key].append(temp_df)
+=======
+    for key in DataFrameDict.keys():
+        try:
+            store[key] = store[key].append(pd.DataFrame(DataFrameDict[key], columns=columns))
+>>>>>>> Stashed changes
         except:
             store[key] = pd.DataFrame(temp_df)
     #print(str(timedelta(seconds=store['AAPL']['Time Stamp'][0] / 1e+9)))
@@ -592,10 +598,17 @@ stock_locate_index = find_index(['Stock Locate'])[0]
 stock_symbol_index = find_index(['Stock'])[0]
 chunk_size = 10000
 lock = multiprocessing.Lock()
+<<<<<<< Updated upstream
 empty_df = pd.DataFrame(index=range(chunk_size), columns=columns)
 for COUNTER in trange(int(281719135/chunk_size)+1):
     DataFrameDict = {}
     for counter in trange(0, chunk_size):
+=======
+
+for COUNTER in trange(int(281719135 / 100000) + 1):
+    DataFrameDict = {}
+    for counter in trange(0, 100000):
+>>>>>>> Stashed changes
         byte = fr.read(2)
         if not byte:
             print('Finish Reading(out of byte)')
