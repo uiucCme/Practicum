@@ -5,6 +5,8 @@ import numpy as np
 import multiprocessing
 from multiprocessing import Process
 from tqdm import *
+import threading
+import h5py
 from datetime import timedelta
 import time
 # os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
@@ -36,22 +38,13 @@ def clean_name(input_name):
 
 
 def write_hdf5(list_name):
-    lock.acquire()
-    write_df = pd.DataFrame(list_name, columns=columns, dtype='object')
+    #lock.acquire()
+    write_df = pd.DataFrame(list_name, columns=columns, dtype='object').convert_objects()
     store = pd.HDFStore('data/HDF5/store.h5', mode='a')
     #write_df.to_hdf('data/HDF5/store.h5', 'RAW', append=True)
-    store.append('RAW', write_df, data_columns=True)
+    store.append('RAW', write_df, data_columns=True, index=False)
     store.close()
-    '''
-    with pd.get_store('data/HDF5/store.h5') as store:
-        try:
-            nrows = store.get_storer('RAW').nrows
-        except:
-            nrows = 0
-        temp_df.index = pd.Series(temp_df.index) + nrows
-        store.append('RAW', temp_df)
-    '''
-    lock.release()
+    #lock.release()
     print('\nFinished This Chunck\n')
 
 def find_index(a):
@@ -86,7 +79,7 @@ def System_Event_Message(message):
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[-1] = chr(ord(array[-1]))
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = System_Event_Message_index
     p = 0
     for i in array_index:
@@ -100,7 +93,7 @@ def Stock_Directory(message):
                  list(struct.unpack("!HH6s8sccIcc2scccccIc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Stock_Directory_index
     p = 0
     for i in array_index:
@@ -113,7 +106,7 @@ def Stock_Trading(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8scc4s", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Stock_Trading_index
     p = 0
     for i in array_index:
@@ -126,7 +119,7 @@ def Reg_SHO(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8sc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Reg_SHO_index
     p = 0
     for i in array_index:
@@ -140,7 +133,7 @@ def Market_Participant_Position(message):
                  list(struct.unpack("!HH6s4s8sccc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Market_Participant_Position_index
     p = 0
     for i in array_index:
@@ -153,7 +146,7 @@ def MWCB_Decline(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQQQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = MWCB_Decline_index
     p = 0
     for i in array_index:
@@ -166,7 +159,7 @@ def MWCB_Status(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = MWCB_Status_index
     p = 0
     for i in array_index:
@@ -179,7 +172,7 @@ def IPOUpdate(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8cIcI", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = IPOUpdate_index
     p = 0
     for i in array_index:
@@ -193,7 +186,7 @@ def Add_Order(message):
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Add_Order_index
     p = 0
     for i in array_index:
@@ -208,7 +201,7 @@ def Add_MPID_Order(message):
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Add_MPID_Order_index
     p = 0
     for i in array_index:
@@ -221,7 +214,7 @@ def Excueted_Order(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQIQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Excueted_Order_index
     p = 0
     for i in array_index:
@@ -235,7 +228,7 @@ def Excueted_Price_Order(message):
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[8] = array[8] / 10000
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Excueted_Price_Order_index
     p = 0
     for i in array_index:
@@ -248,7 +241,7 @@ def Order_Cancel(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQI", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Order_Cancel_index
     p = 0
     for i in array_index:
@@ -261,7 +254,7 @@ def Order_Delete(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Order_Delete_index
     p = 0
     for i in array_index:
@@ -275,7 +268,7 @@ def Order_Replace(message):
     array[3] = int.from_bytes(array[3], byteorder='big')
     array[7] = array[7] / 10000
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Order_Replace_index
     p = 0
     for i in array_index:
@@ -288,7 +281,7 @@ def Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQcIQIQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Trade_index
     p = 0
     for i in array_index:
@@ -301,7 +294,7 @@ def Cross_Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQ8sIQc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Cross_Trade_index
     p = 0
     for i in array_index:
@@ -314,7 +307,7 @@ def Broken_Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = Broken_Trade_index
     p = 0
     for i in array_index:
@@ -328,7 +321,7 @@ def NOII(message):
                  list(struct.unpack("!HH6sQQc8sIIIcc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = NOII_index
     p = 0
     for i in array_index:
@@ -341,7 +334,7 @@ def RPII(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6s8sc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
     array = form_list(array)
-    complete_array = base_list
+    complete_array = base_list.copy()
     array_index = RPII_index
     p = 0
     for i in array_index:
@@ -396,15 +389,15 @@ def ParseMessage(message, messageType):
         return
 
 
-columns = ['Attribution', 'Authenticity', 'Breached_Level',
-           'Buy_Sell_Indicator', 'Canceled_Shares', 'Cross_Price',
-           'Cross_Type', 'Current_Reference_Price', 'ETP_Flag',
-           'ETP_Leverage_Factor', 'Event_Code', 'Executed_Shares',
-           'Execution_Price', 'Far_price', 'Financial_Status_Indicator',
-           'IPO_Flag', 'IPO_Price', 'IPO_Quotation_Release_Qualifier',
-           'IPO_Quotation_Release_Time', 'Imbalance_Direction', 'Imbalance_Shares',
-           'Interest_Flag', 'Inverse_Indicator', 'Issue_Classification',
-           'Issue_Subtype', 'LULD_Reference_Price_Tier', 'Level_1',
+columns = ['Attribution', 'Authenticity', 'Breached_Level',                                         #0
+           'Buy_Sell_Indicator', 'Canceled_Shares', 'Cross_Price',                                  #1
+           'Cross_Type', 'Current_Reference_Price', 'ETP_Flag',                                     #2
+           'ETP_Leverage_Factor', 'Event_Code', 'Executed_Shares',                                  #3
+           'Execution_Price', 'Far_price', 'Financial_Status_Indicator',                            #4
+           'IPO_Flag', 'IPO_Price', 'IPO_Quotation_Release_Qualifier',                              #5
+           'IPO_Quotation_Release_Time', 'Imbalance_Direction', 'Imbalance_Shares',                 #6
+           'Interest_Flag', 'Inverse_Indicator', 'Issue_Classification',                            #7
+           'Issue_Subtype', 'LULD_Reference_Price_Tier', 'Level_1',                                 #8
            'Level_2', 'Level_3', 'MPID',
            'Market_Category', 'Market_Maker_Mode', 'Market_Participant_State',
            'Match_Number', 'Message_Type', 'Near_Price',
@@ -416,7 +409,10 @@ columns = ['Attribution', 'Authenticity', 'Breached_Level',
            'Stock', 'Stock_Locate', 'Time_Stamp',
            'Tracking_Number', 'Trading_State']
 
-base_list = [""]*4 + [np.nan]*2 + [""] + [np.nan] +[""]*3 + [np.nan]*3 + [""]*2 \
+base_list = [""]*3 + \
+            [""] + [np.nan]*2 \
+            + [""] + [np.nan] +[""]\
+            +[np.nan] + [""] + [np.nan]*3 + [""]*2 \
             + [np.nan]*1 + [""] + [np.nan] + [""] + [np.nan] + [""]*5 +[np.nan]*3 + [""]*4 + [np.nan] \
             + [""] + [np.nan]*6 + [""]*6 + [np.nan] + [""] + [np.nan] + [""]*2 + [np.nan]*3 + [""]
 
@@ -616,12 +612,12 @@ input_file = "data/" + input
 fr = open(input_file, "rb")
 stock_locate_index = find_index(['Stock_Locate'])[0]
 stock_symbol_index = find_index(['Stock'])[0]
-chunk_size = 1000000
+chunk_size = 5000000
 initialize_dataframe = True
 lock = multiprocessing.Lock()
 for COUNTER in trange(int(281719135/chunk_size)+1):
     temp_list = []
-    for counter in trange(0, chunk_size):
+    for counter in range(0, chunk_size):
         byte = fr.read(2)
         if not byte:
             print('Finish Reading(out of byte)')
@@ -642,18 +638,24 @@ for COUNTER in trange(int(281719135/chunk_size)+1):
     except:
         print('\nNo need to wait IO process!\n')
     if(initialize_dataframe):
-        temp_df = pd.DataFrame(temp_list, columns=columns).convert_objects()
+        temp_df = pd.DataFrame(temp_list, columns=columns)
+        '''
+        np_temp_list = np.array(temp_list, dtype="S10")
+        f = h5py.File('data/HDF5/store.h5', 'w')
+        store = f.create_dataset('RAW', data=np_temp_list, maxshape=(chunk_size, 56))
+        '''
         print('\nopen hdf5 file...\n')
         store = pd.HDFStore('data/HDF5/store.h5', mode='w')
         print('\nappending hdf5 file...\n')
-        store.append('RAW', temp_df, min_itemsize=30, data_columns=True)
+        store.append('RAW', temp_df, min_itemsize=30, data_columns=True, index=False)
         print('\nFinished appending!\n')
         store.close()
+
         initialize_dataframe = False
     else:
-        IO_process = Process(target=write_hdf5, args=(temp_list,))
-        IO_process.start()
-        # write_hdf5(temp_list)
+        #IO_process = threading.Thread(target=write_hdf5, args=(temp_list,))
+        #IO_process.start()
+        write_hdf5(temp_list)
 print('Finish Writing!')
 fr.close()
 
