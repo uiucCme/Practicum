@@ -18,8 +18,8 @@ import time
 
 def get_data(stock='NA', type_needed='NA'):
     if stock == 'NA':
-        get_df = pd.read_hdf('data/HDF5/store.h5',
-                             'RAW').replace("", np.nan)
+        get_df = pd.read_hdf('I:/data/HDF5/store.h5',
+                             'table').replace("", np.nan)
     else:
         get_df = pd.read_hdf('data/HDF5/store.h5',
                              'RAW',
@@ -282,6 +282,7 @@ def Order_Replace(message):
 def Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQcIQIQ", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
+    array[8] = array[8] / 10000
     array = form_list(array)
     complete_array = base_list.copy()
     array_index = Trade_index
@@ -295,6 +296,7 @@ def Trade(message):
 def Cross_Trade(message):
     array = [chr(message[0])] + list(struct.unpack("!HH6sQ8sIQc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
+    array[6] = array[6] / 10000
     array = form_list(array)
     complete_array = base_list.copy()
     array_index = Cross_Trade_index
@@ -322,6 +324,9 @@ def NOII(message):
     array = [chr(message[0])] + \
             list(struct.unpack("!HH6sQQc8sIIIcc", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
+    array[8] = array[8] / 10000
+    array[9] = array[9] / 10000
+    array[10] = array[10] / 10000
     array = form_list(array)
     complete_array = base_list.copy()
     array_index = NOII_index
@@ -395,7 +400,7 @@ columns = ['Attribution', 'Authenticity', 'Breached_Level',  # 0
            'Buy_Sell_Indicator', 'Canceled_Shares', 'Cross_Price',  # 1
            'Cross_Type', 'Current_Reference_Price', 'ETP_Flag',  # 2
            'ETP_Leverage_Factor', 'Event_Code', 'Executed_Shares',  # 3
-           'Execution_Price', 'Far_price', 'Financial_Status_Indicator',  # 4
+           'Execution_Price', 'Far_Price', 'Financial_Status_Indicator',  # 4
            'IPO_Flag', 'IPO_Price', 'IPO_Quotation_Release_Qualifier',  # 5
            'IPO_Quotation_Release_Time', 'Imbalance_Direction', 'Imbalance_Shares',  # 6
            'Interest_Flag', 'Inverse_Indicator', 'Issue_Classification',  # 7
@@ -412,12 +417,18 @@ columns = ['Attribution', 'Authenticity', 'Breached_Level',  # 0
            'Tracking_Number', 'Trading_State']
 
 base_list = [""] * 3 + \
-            [""] + [np.nan] * 2 \
-            + [""] + [np.nan] + [""] \
-            + [np.nan] + [""] + [np.nan] * 3 + [""] * 2 \
-            + [np.nan] * 1 + [""] + [np.nan] + [""] + [np.nan] + [""] * 5 + [np.nan] * 3 + [""] * 4 + [np.nan] \
-            + [""] + [np.nan] * 6 + [""] * 6 + [np.nan] + [""] + [np.nan] + [""] * 2 + [np.nan] * 3 + [""]
-base_list[37:40]
+            [""] + [0] * 2 \
+            + [""] + [0] + [""] \
+            + [0] + [""] + [0] * 3 + [""] * 2 \
+            + [0] * 1 + [""] + [0] + [""] + [0] + [""] * 5 + [0] * 3 + [""] * 4 + [0] \
+            + [""] + [0] * 6 + [""] * 6 + [0] + [""] + [0] + [""] * 2 + [0] * 3 + [""]
+price_type = find_index(['IPO_Price', 'Price', 'Execution_Price',
+                         'Cross_Price','Far_Price','Near_Price',
+                         'Current_Reference_Price'])
+for index in price_type:
+    base_list[index] = np.nan
+
+base_list[find_index(['Shares'])[0]] = 1
 System_Event_Message_index = find_index(['Message_Type',
                                          'Stock_Locate',
                                          'Tracking_Number',
@@ -588,7 +599,7 @@ NOII_index = find_index(['Message_Type',
                          'Imbalance_Shares',
                          'Imbalance_Direction',
                          'Stock',
-                         'Far_price',
+                         'Far_Price',
                          'Near_Price',
                          'Current_Reference_Price',
                          'Cross_Type',
@@ -602,14 +613,14 @@ RPII_index = find_index(['Message_Type',
                          'Interest_Flag'])
 os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
 # os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
-store = pd.HDFStore('data/HDF5/store_grouped.h5', "w", complevel=9, complib='bzip2')  # total line number: 281719135
+#store = pd.HDFStore('I:/data/HDF5/store_grouped.h5', "w", complevel=9, complib='bzip2')  # total line number: 281719135
 code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t', index_col=0).to_dict()
 input = "07292016.NASDAQ_ITCH50"
 input_file = "data/" + input
 fr = open(input_file, "rb")
 stock_locate_index = find_index(['Stock_Locate'])[0]
 stock_symbol_index = find_index(['Stock'])[0]
-chunk_size = 20000000
+chunk_size = 40000000
 initialize_dataframe = True
 for COUNTER in trange(int(281719135 / chunk_size) + 1):
     DataFrameDict = {}
@@ -633,22 +644,47 @@ for COUNTER in trange(int(281719135 / chunk_size) + 1):
             DataFrameDict[store_code] = []
             DataFrameDict[store_code].append(RESULT)
 
-            # write_hdf5(list(DataFrameDict.keys())[0])
+            # write_hdf5(list(DataFrameDict.keys())[0]) 
     '''
     a_args = list(DataFrameDict.keys())
     second_arg = DataFrameDict
     with Pool(os.cpu_count()) as pool:
         pool.starmap(write_hdf5, zip(a_args, repeat(second_arg)))
     '''
-    for key in tqdm(DataFrameDict.keys()):
-        temp_df = pd.DataFrame(DataFrameDict[key], columns=columns)
-        store.append(key, temp_df, min_itemsize=30, data_columns=True, index=False)
+    if initialize_dataframe:
+        for key in tqdm(DataFrameDict.keys()):
+            temp_df = pd.DataFrame(DataFrameDict[key], columns=columns)
+            if key == 'PRN':
+                key = 'PRNsp'
+            temp_df.to_hdf('I:/data/HDF5/'+ key+'.h5', 'table',
+                           min_itemsize=10,
+                           mode='w',
+                           format='table',
+                           append=True,
+                           complevel=9,
+                           complib='bzip2')
+            initialize_dataframe = False
+    else:
+        for key in tqdm(DataFrameDict.keys()):
+            temp_df = pd.DataFrame(DataFrameDict[key], columns=columns)
+            if key == 'PRN':
+                key = 'PRNsp'
+            temp_df.to_hdf('I:/data/HDF5/'+ key+'.h5', 'table',
+                           min_itemsize=10,
+                           mode='a',
+                           format='table',
+                           append=True,
+                           complevel=9,
+                           complib='bzip2')
+        #store.append(key, temp_df, min_itemsize=30, data_columns=True, index=False)
+
         # write_hdf5(temp_dict)
+
 
 
 print('Finish Writing!')
 fr.close()
-store.close()
+#store.close()
 
 '''
 x=[]
@@ -666,3 +702,5 @@ for i in range(100000):
     x = np.array([1,2,3]).reshape((1, len(array))
 print("--- %s seconds ---" % (time.time() - start_time))
 '''
+
+
