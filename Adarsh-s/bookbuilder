@@ -1,0 +1,172 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Sep 06 21:44:42 2016
+
+@author: Jack
+"""
+
+import numpy as np
+import csv
+import matplotlib.pyplot as plt
+
+
+'''
+Main data structures
+
+live_buy_order_list, live_sell_order_list
+Orderbook is a cumulation of live_buy_order_list and live_sell_order_list
+The columns of the orderbook are as follows:
+order  reference number, timestamp, buy/sell indicator, volume, price, stock  id
+
+bid_ask_spread
+Contains best bid and ask information across time.
+This can be used track price movement since the price will always lie between best bid and best ask
+'''
+
+# Adding a new entry to the orderbook on the buy side
+def insert_into_live_buy(order):
+    i = 0;
+    global live_buy_order_list;
+    row_size = live_buy_order_list.shape[0];
+    while float(order[4]) <= live_buy_order_list[i,4]:
+        i = i + 1;
+        if i >= row_size:
+            break
+    live_buy_order_list = np.insert(live_buy_order_list,i,order,0);
+
+# Adding a new entry to the orderbook on the sell side
+def insert_into_live_sell(order):
+    i = 0;
+    global live_sell_order_list;
+    row_size = live_sell_order_list.shape[0];
+    while float(order[4]) >= live_sell_order_list[i,4]:
+        i = i + 1;
+        if i >= row_size:
+            break
+    live_sell_order_list = np.insert(live_sell_order_list,i,order,0);
+
+# Finding the orders in the book for modify order messages    
+def find_order_in_book(ref):
+    i = 0;
+    bsize = live_buy_order_list.shape[0];
+    ssize = live_sell_order_list.shape[0];
+    while i < bsize or i < ssize:
+        if i < bsize and long(live_buy_order_list[i,0]) == float(ref):
+            return 1,i
+        elif i < ssize and long(live_sell_order_list[i,0]) == float(ref):
+            return -1,i
+        i = i + 1;
+    return -2,-2
+
+
+# Orderbook matrix for buy side
+# The columns of the orderbook are as follows:
+# order  reference number, timestamp, buy/sell indicator, volume, price, stock  id
+live_buy_order_list = np.zeros((1,6));
+
+# Orderbok matrix for sell side
+# The columns of the orderbook are as follows:
+# order  reference number, timestamp, buy/sell indicator, volume, price, stock  id
+live_sell_order_list = np.zeros((1,6));
+
+# List of transaction price history
+transaction_list = np.zeros(1);
+transaction_price = 0;
+
+# List of best bid/best ask in the orderbook
+bid_ask_spread = np.zeros((1,2));
+
+
+parsed_data = open('C:\\Users\\akshett2\\Downloads\\test.csv','rb');
+reader = csv.reader(parsed_data);
+for row1 in reader:
+    if row1[0] == 'A' and row1[7] == 'SPY     ':
+        stock_locate = row1[1];
+        break;
+      
+for row in (r for i, r in enumerate(reader)):
+    if row[0] == 'A' and row[7] == 'SPY     ':
+        if row[5] == 'B':
+            order_info = np.array([row[4],row[3],1,row[6],row[8],row[1]]);
+            insert_into_live_buy(order_info);
+        elif row[5] == 'S':
+            order_info = np.array([row[4],row[3],-1,row[6],row[8],row[1]]);
+            insert_into_live_sell(order_info);
+    elif row[0] == 'F' and row[7] == 'SPY     ':
+        if row[5] == 'B':
+            order_info = np.array([row[4],row[3],1,row[6],row[8],row[1]]);
+            insert_into_live_buy(order_info);
+        elif row[5] == 'S':
+            order_info = np.array([row[4],row[3],-1,row[6],row[8],row[1]]);
+            insert_into_live_sell(order_info);
+    elif row[0] == 'E' and row[1] == stock_locate:
+        order_ref = row[4];
+        pos = find_order_in_book(order_ref);
+        if pos[0] == 1:
+            live_buy_order_list[pos[1],3] = live_buy_order_list[pos[1],3] - float(row[5]);
+            if live_buy_order_list[pos[1],3] < 0.0000001:
+                live_buy_order_list = np.delete(live_buy_order_list,pos[1],0);
+        elif pos[0] == -1:
+            live_sell_order_list[pos[1],3] = live_sell_order_list[pos[1],3] - float(row[5]);
+            if live_sell_order_list[pos[1],3] < 0.0000001:
+                live_sell_order_list = np.delete(live_sell_order_list,pos[1],0);
+    elif row[0] == 'C' and row[1] == stock_locate:
+        order_ref = row[4];
+        pos = find_order_in_book(order_ref);
+        if pos[0] == 1:
+            live_buy_order_list[pos[1],3] = live_buy_order_list[pos[1],3] - float(row[5]);
+            if live_buy_order_list[pos[1],3] < 0.0000001:
+                live_buy_order_list = np.delete(live_buy_order_list,pos[1],0);
+        elif pos[0] == -1:
+            live_sell_order_list[pos[1],3] = live_sell_order_list[pos[1],3] - float(row[5]);
+            if live_sell_order_list[pos[1],3] < 0.0000001:
+                live_sell_order_list = np.delete(live_sell_order_list,pos[1],0);
+    elif row[0] == 'X' and row[1] == stock_locate:
+        order_ref = row[4];
+        pos = find_order_in_book(order_ref);
+        if pos[0] == 1:
+            live_buy_order_list[pos[1],3] = live_buy_order_list[pos[1],3] - float(row[5]);
+            if live_buy_order_list[pos[1],3] < 0.0000001:
+                live_buy_order_list = np.delete(live_buy_order_list,pos[1],0);
+        elif pos[0] == -1:
+            live_sell_order_list[pos[1],3] = live_sell_order_list[pos[1],3] - float(row[5]);
+            if live_sell_order_list[pos[1],3] < 0.0000001:
+                live_sell_order_list = np.delete(live_sell_order_list,pos[1],0);
+    elif row[0] == 'D' and row[1] == stock_locate:
+        order_ref = row[4];
+        pos = find_order_in_book(order_ref);
+        if pos[0] == 1:
+            live_buy_order_list = np.delete(live_buy_order_list,pos[1],0);
+        elif pos[0] == -1:
+            live_sell_order_list = np.delete(live_sell_order_list,pos[1],0);
+    elif row[0] == 'U' and row[1] == stock_locate:
+        order_ref = row[4];
+        pos = find_order_in_book(order_ref);
+        if pos[0] == 1:
+            live_buy_order_list = np.delete(live_buy_order_list,pos[1],0);
+            if row[6] > 0:
+                new_order = np.array([row[5],row[3],1,row[6],row[7],stock_locate]);
+                insert_into_live_buy(new_order);
+        elif pos[0] == -1:
+            live_sell_order_list = np.delete(live_sell_order_list,pos[1],0);
+            if row[6] > 0:
+                new_order = np.array([row[5],row[3],-1,row[6],row[7],stock_locate]);
+                insert_into_live_sell(new_order);
+
+    if live_sell_order_list.shape[0] > 1:
+        best_bid_ask = np.array([live_buy_order_list[0,4],live_sell_order_list[1,4]]);
+    else:
+        best_bid_ask = np.array([live_buy_order_list[0,4],300]);
+    bid_ask_spread = np.vstack((bid_ask_spread,best_bid_ask));
+
+
+
+parsed_data.close();
+
+# Plotting best bid/ask over time
+plt.figure()
+plt.plot(bid_ask_spread[:,0],color = 'blue',label = 'best bid');
+plt.plot(bid_ask_spread[:,1],color = 'red',label = 'best ask');
+plt.legend(loc = 'upper right');
+plt.ylabel('bid ask spread');
+plt.title('Bid Ask Spread over time');
