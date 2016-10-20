@@ -5,10 +5,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 from bisect import bisect_left
-_LAG = 500
+_LAG = 30000
 
-# function to extract data in time range needed, and delete all 0
-# difference data
+
 def time_to_nanosecond(input_time_string):
     ftr = [3600, 60, 1]
     nanosecond_output = sum([a * b for a, b in zip(ftr, [int(i)
@@ -17,7 +16,7 @@ def time_to_nanosecond(input_time_string):
                                                              ":")])]) * 1e+9
     return nanosecond_output
 
-
+# function to extract data in time range needed, and delete all 0 difference data
 def data_cleaning(df_input, start_time='10:30:00', end_time='15:00:00',
                   execution=False):
     """
@@ -74,8 +73,9 @@ def get_imbalance_rate(df_input, level):
 
 
 
+#function to find the latest
 
-def takeClosest(myNumber, myList=orderbook_df.index):
+def takeClosest(myNumber, myList):
     """
     Assumes myList is sorted. Returns closest value to myNumber.
 
@@ -86,8 +86,12 @@ def takeClosest(myNumber, myList=orderbook_df.index):
         return myList[0]
     if pos == len(myList):
         return myList[-1]
+    if myList[pos] == myNumber:
+        return myNumber
     before = myList[pos - 1]
     return before
+
+
 
 # os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
@@ -134,8 +138,10 @@ execution_record_pctchange_df = execution_record_df.pct_change(1)
 # caculate the mid price between best bid and best ask
 Y = pd.DataFrame(index=execution_record_df.index,
                  columns=['future.mid.price', 'direction.by.midp', 'direction.by.e'])
-vfunc = np.vectorize(takeClosest)
-timestamp_needed = vfunc(np.array(execution_record_df.index)+_LAG)
+
+timestamp_needed = []
+for i in np.array(execution_record_df.index)+_LAG:
+    timestamp_needed.append(takeClosest(i, orderbook_df.index))
 print('found all future timestamp!')
 search_df = orderbook_df.groupby(orderbook_df.index).last()
 Y['future.mid.price'] = search_df.loc[list(timestamp_needed)][22]
@@ -189,8 +195,9 @@ output_df = output_df[['mid.price']+['exe.p'] + output_col]
 vgetdirection = np.vectorize(get_direction)
 output_df['direction.by.midp'] = vgetdirection(output_df['future.mid.price'] - output_df['mid.price'])
 output_df['direction.by.e'] = vgetdirection(output_df['future.mid.price'] - output_df['exe.p'])
-output_df.to_csv(
-data_output_dir + "/Attributes" + time.strftime("_%m_%d") + ".csv")
+output_name = data_output_dir + "Attributes" + time.strftime("_%m_%d") + '_lag' + str(_LAG) + ".csv"
+output_df.to_csv(output_name)
+
 
 output_matrix = output_df.as_matrix()
 with h5py.File(data_input_dir + "/order_book.hdf5", 'r+') as f:
@@ -221,3 +228,11 @@ print("finished task!")
 #
 #
 # plt.clf()
+
+
+# lags = [500, 2000, 5000, 10000, 30000, 50000, 100000]
+# for _LAG in lags:
+#     timestamp_needed = []
+#     for i in np.array(execution_record_df.index) + _LAG:
+#         timestamp_needed.append(takeClosest(i, orderbook_df.index))
+#     print(np.sum(timestamp_needed != execution_record_df.index))
