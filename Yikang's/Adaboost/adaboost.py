@@ -7,7 +7,6 @@ from sklearn.tree import DecisionTreeClassifier
 import pandas as pd
 import os
 
-string = 'liaojunqi dashabi'
 
 ALGORITHM_ROUND = 4
 TREE_DEPTH = 2
