@@ -144,7 +144,7 @@ for i in np.array(execution_record_df.index)+_LAG:
     timestamp_needed.append(takeClosest(i, orderbook_df.index))
 print('found all future timestamp!')
 search_df = orderbook_df.groupby(orderbook_df.index).last()
-Y['future.mid.price'] = search_df.loc[list(timestamp_needed)][22]
+Y['future.mid.price'] = search_df.loc[list(timestamp_needed)][22].tolist()
 
 
 execution_record_df.columns = ['exe.p', 'exe.v']

@@ -40,9 +40,9 @@ def clean_name(input_name):
 def write_hdf5(list_name):
     #lock.acquire()
     write_df = pd.DataFrame(list_name, columns=columns, dtype='object').convert_objects()
-    store = pd.HDFStore('data/HDF5/store.h5', mode='a')
-    #write_df.to_hdf('data/HDF5/store.h5', 'RAW', append=True)
-    store.append('RAW', write_df, data_columns=True, index=False)
+    #store = pd.HDFStore('data/HDF5/store.h5', mode='a')
+    write_df.to_hdf('data/HDF5/store.h5', 'RAW', append=True, complevel=9, complib='bzip2')
+    store.append('RAW', write_df, min_itemsize=30, data_columns=True, index=False)
     store.close()
     #lock.release()
     print('\nFinished This Chunck\n')
@@ -169,8 +169,9 @@ def MWCB_Status(message):
 
 
 def IPOUpdate(message):
-    array = [chr(message[0])] + list(struct.unpack("!HH6s8cIcI", message[1:]))
+    array = [chr(message[0])] + list(struct.unpack("!HH6s8sIcI", message[1:]))
     array[3] = int.from_bytes(array[3], byteorder='big')
+    array[7] = array[7] / 10000
     array = form_list(array)
     complete_array = base_list.copy()
     array_index = IPOUpdate_index
@@ -645,7 +646,7 @@ for COUNTER in trange(int(281719135/chunk_size)+1):
         store = f.create_dataset('RAW', data=np_temp_list, maxshape=(chunk_size, 56))
         '''
         print('\nopen hdf5 file...\n')
-        store = pd.HDFStore('data/HDF5/store.h5', mode='w')
+        store = pd.HDFStore('data/HDF5/store.h5', mode='w', complevel=9, complib='bzip2')
         print('\nappending hdf5 file...\n')
         store.append('RAW', temp_df, min_itemsize=30, data_columns=True, index=False)
         print('\nFinished appending!\n')
@@ -653,10 +654,11 @@ for COUNTER in trange(int(281719135/chunk_size)+1):
 
         initialize_dataframe = False
     else:
-        #IO_process = threading.Thread(target=write_hdf5, args=(temp_list,))
-        #IO_process.start()
+        # IO_process = threading.Thread(target=write_hdf5, args=(temp_list,))
+        # IO_process.start()
         write_hdf5(temp_list)
 print('Finish Writing!')
+store.close()
 fr.close()
 
 

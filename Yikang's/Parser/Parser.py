@@ -8,8 +8,10 @@ from datetime import timedelta
 
 os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016/Parser")
 #os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/Parser")
+
+
 def form_list(list):
-    for position in range(0,len(list)):
+    for position in range(0, len(list)):
         if type(list[position]) == type(b'byte'):
             list[position] = list[position].decode("utf-8")
             list[position] = list[position].strip()
@@ -237,7 +239,7 @@ def ParseMessage(message, messageType):
 input = "07292016.NASDAQ_ITCH50"
 useful_event_code = ['A', 'F', 'E', 'C', 'U', 'D', 'X']
 
-stock_code = 7991  #VXX stock code
+stock_code = 7991  # VXX stock code
 file = 'VXX'
 
 input_file = "data/" + input
@@ -255,7 +257,7 @@ bid = pd.DataFrame(index=range(0, 1))
 ask = pd.DataFrame(index=range(0, 1))
 
 fr = open(input_file, "rb")
-#resultFile = open(decode_filename, 'w', newline="")
+# resultFile = open(decode_filename, 'w', newline="")
 
 # order book raw file
 f = open(orderbook_output_filename, "w", newline='')
@@ -263,7 +265,6 @@ wr = csv.writer(f, dialect='excel')
 
 # order book detail
 # fd = open(orderbook_detail_file_name, "w", newline='')
-
 
 
 while(True):
@@ -279,21 +280,21 @@ while(True):
     messageType = chr(message[0])
     RESULT = ParseMessage(message, messageType)
     RESULT = form_list(RESULT)
-    RESULT[3] = str(timedelta(seconds=RESULT[3]/1e+9))
-    #wr = csv.writer(resultFile, dialect='excel')
-    #wr.writerow(RESULT)
+    RESULT[3] = str(timedelta(seconds=RESULT[3] / 1e+9))
+    # wr = csv.writer(resultFile, dialect='excel')
+    # wr.writerow(RESULT)
 
     if messageType in useful_event_code and RESULT[1] == stock_code:
         print(RESULT)
         wr.writerow(RESULT)
-        #data.iloc[0] = complete_result(RESULT)
-        #BB.main(data, order_book, bid, ask, fd, wr)
-        #wr = csv.writer(resultFile, dialect='excel')
-        #wr.writerow(RESULT)
+        # data.iloc[0] = complete_result(RESULT)
+        # BB.main(data, order_book, bid, ask, fd, wr)
+        # wr = csv.writer(resultFile, dialect='excel')
+        # wr.writerow(RESULT)
 
 fr.close()
 f.close()
-#f.close()
-#resultFile.close()
-#resultFile2.close()
-#fd.close()
+# f.close()
+# resultFile.close()
+# resultFile2.close()
+# fd.close()

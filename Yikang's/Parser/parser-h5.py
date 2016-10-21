@@ -14,21 +14,16 @@ import time
 
 
 # os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
-# os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
+os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
 
 def get_data(stock='NA', type_needed='NA'):
-    if stock == 'NA':
-        get_df = pd.read_hdf('I:/data/HDF5/store.h5',
-                             'table').replace("", np.nan)
-    else:
-        get_df = pd.read_hdf('data/HDF5/store.h5',
-                             'RAW',
-                             where='Stock == %s' % stock).replace("", np.nan)
+    get_df = pd.read_hdf('data/HDF5/hdf5/'+stock+'.h5','table').replace("", np.nan)
     if type_needed != 'NA':
         if (type(type_needed) == type('Str')):
             type_needed = [type_needed]
         get_df = get_df[get_df['Message_Type'].isin(type_needed)]
     get_df.dropna(1, how='all', inplace=True)
+    get_df = get_df.loc[:, (get_df != 0).any(axis=0)]
     return (get_df.reset_index(drop=True))
 
 
@@ -611,8 +606,8 @@ RPII_index = find_index(['Message_Type',
                          'Time_Stamp',
                          'Stock',
                          'Interest_Flag'])
-os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
-# os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
+#os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
+#os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
 #store = pd.HDFStore('I:/data/HDF5/store_grouped.h5', "w", complevel=9, complib='bzip2')  # total line number: 281719135
 code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t', index_col=0).to_dict()
 input = "07292016.NASDAQ_ITCH50"
@@ -654,9 +649,9 @@ for COUNTER in trange(int(281719135 / chunk_size) + 1):
     if initialize_dataframe:
         for key in tqdm(DataFrameDict.keys()):
             temp_df = pd.DataFrame(DataFrameDict[key], columns=columns)
-            if key == 'PRN':
-                key = 'PRNsp'
-            temp_df.to_hdf('I:/data/HDF5/'+ key+'.h5', 'table',
+            #if key == 'PRN':
+             #   key = 'PRNsp'
+            temp_df.to_hdf('data/HDF5/store_grouped.h5', key,
                            min_itemsize=10,
                            mode='w',
                            format='table',
@@ -667,9 +662,9 @@ for COUNTER in trange(int(281719135 / chunk_size) + 1):
     else:
         for key in tqdm(DataFrameDict.keys()):
             temp_df = pd.DataFrame(DataFrameDict[key], columns=columns)
-            if key == 'PRN':
-                key = 'PRNsp'
-            temp_df.to_hdf('I:/data/HDF5/'+ key+'.h5', 'table',
+            #if key == 'PRN':
+             #   key = 'PRNsp'
+            temp_df.to_hdf('data/HDF5/store_grouped.h5', key,
                            min_itemsize=10,
                            mode='a',
                            format='table',

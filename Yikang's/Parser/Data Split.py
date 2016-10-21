@@ -3,10 +3,10 @@ import os
 from tqdm import *
 
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
-# os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
+#os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
 # create unique list of names
 code_map = pd.read_table('data/grouped/stock_located.txt', sep='\t')
-
+store = pd.HDFStore('store.h5')
 
 def find_name(code):
     return (code_map.loc[code_map['Stock Locate'] == code].iloc[0, 1])
@@ -24,6 +24,7 @@ for data in tqdm(pd.read_csv('data/07292016.NASDAQ_ITCH50output.txt',
 
     for key in tqdm(DataFrameDict.keys()):
         DataFrameDict[key] = data[:][data.StockLocate == key]
-        output_filename = 'data/grouped/' + find_name(int(key)) + '.txt'
-        DataFrameDict[key].to_csv(output_filename, index=False, mode='a', header=False)
+        output_filename = 'data/grouped/' + find_name(int(key)) + '.h5'
+        DataFrameDict[key]
+        DataFrameDict[key].to_hdf(output_filename, 'table', append=True, index=False, header=False)
         DataFrameDict[key] = 0
