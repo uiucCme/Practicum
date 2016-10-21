@@ -27,9 +27,9 @@ def confusion_table(true, predict):
     return confusion_table
 
 
-os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
+os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/")
 data_input_dir = os.getcwd() + "/data/random_forest/"
-data_output_dir = os.getcwd() + "/Adaboost/"
+data_output_dir = os.getcwd() + "/Github Code/Yikang's/Adaboost/"
 
 # read hdf5 file
 print("reading hdf5 file...")
