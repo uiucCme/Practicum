@@ -90,12 +90,12 @@ def ten_orderbook_output(time, bid, ask, messageType):
     array_value = [0] * 43
     array_value[0] = time
     array_value[1] = ord(messageType)
-    bid_position = 2
+    bid_position = 21
     ask_position = 23
-    for key in reversed(nlargest(10, bid)):
-        array_value[bid_position] = key
-        array_value[bid_position + 1] = bid[key]
-        bid_position += 2
+    for key in nlargest(10, bid):
+        array_value[bid_position] = bid[key]
+        array_value[bid_position - 1] = key
+        bid_position += -2
     array_value[22] = 999999999
     for key in nsmallest(10, ask):
         array_value[ask_position] = key

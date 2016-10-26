@@ -8,7 +8,7 @@ import pandas as pd
 import os
 
 
-ALGORITHM_ROUND = 4
+ALGORITHM_ROUND = 50
 TREE_DEPTH = 2
 
 
@@ -29,11 +29,11 @@ def confusion_table(true, predict):
 
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/")
 data_input_dir = os.getcwd() + "/data/random_forest/"
-data_output_dir = os.getcwd() + "/Github Code/Yikang's/Adaboost/"
+data_output_dir = os.getcwd() + "/data/Adaboost/"
 
 # read hdf5 file
 print("reading hdf5 file...")
-data = pd.read_csv(data_input_dir + "Attributes_10_20_lag30000.csv")
+data = pd.read_csv(data_input_dir + "Attributes_10_26_lag1000000.csv")
 data.drop(0, 0, inplace=True)
 Y1 = data['direction.by.midp']  # predict direction by mid price
 Y2 = data['direction.by.e']
@@ -60,6 +60,15 @@ bdt_real.fit(X_train, Y1_train)
 # bdt_discrete.fit(X_train, Y1_train)
 print('finished fit')
 print(confusion_table(Y1_test, bdt_real.predict(X_test)))
+
+
+prob = bdt_real.predict_proba(X_test)
+pred = Y1_test.tolist()
+
+table = pd.DataFrame(prob)
+table = pd.concat([table, pd.DataFrame(pred)], 1)
+table.columns = [-1, 0, 1, 'true']
+table.sort(1, ascending=False)[:1000]
 bdt_real.get_params()
 
 # draw trees in every

@@ -20,12 +20,12 @@ def confusion_table(true, predict):
 
 
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
-data_input_dir = os.getcwd() + "/data/random_forest/"
+data_input_dir = os.getcwd() + "/data/Attributes/"
 data_output_dir = os.getcwd() + "/Adaboost/"
 
 # read hdf5 file
 print("reading hdf5 file...")
-data = pd.read_csv(data_input_dir + "Attributes_10_20_lag30000.csv")
+data = pd.read_csv(data_input_dir + "Attributes_10_26_lag1000000.csv")
 data.drop(0, 0, inplace=True)
 Y1 = data['direction.by.midp']  # predict direction by mid price
 Y2 = data['direction.by.e']
@@ -43,7 +43,6 @@ dot_data = tree.export_graphviz(clf, out_file=None, filled=True, rounded=True,
                                 special_characters=True,
                                 feature_names=X_train.columns)
 graph = pydotplus.graph_from_dot_data(dot_data)
-confusion_table(Y1_test, clf.predict(X_test))
 confusion_table(Y1_train, clf.predict(X_train))
+confusion_table(Y1_test, clf.predict(X_test))
 graph.write_pdf(data_output_dir + "tree.pdf")
-Image(graph.create_png())

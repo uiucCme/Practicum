@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 from bisect import bisect_left
-_LAG = 30000
+_LAG = 1000000
 
 
 def time_to_nanosecond(input_time_string):
@@ -96,7 +96,7 @@ def takeClosest(myNumber, myList):
 # os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
 data_input_dir = os.getcwd() + "/data/order_book/"
-data_output_dir = os.getcwd() + "/data/random_forest/"
+data_output_dir = os.getcwd() + "/data/Attributes/"
 
 # read hdf5 file
 print("reading hdf5 file...")
@@ -108,6 +108,14 @@ with h5py.File(data_input_dir + "/order_book.hdf5", 'r') as f:
 orderbook_df = pd.DataFrame(order_book)
 record_df = pd.DataFrame(record)
 orderbook_df[22] = 0.5 * (orderbook_df[20] + orderbook_df[23])
+
+
+# plot bid ask spread
+# bid_ask_spread = orderbook_df[23] - orderbook_df[20]
+# bid_ask_spread = bid_ask_spread[abs(bid_ask_spread)<0.1]
+# plt.hist(bid_ask_spread, bins=200)
+# plt.show()
+
 
 # step 1: get the data and transfer it to data frame, from 10:30:00 to 15:30:00
 time_to_start = '10:30:00'
@@ -121,8 +129,6 @@ orderbook_df.set_index(0, inplace=True)
 execution_orderbook_df.set_index(0, inplace=True)
 execution_record_df.set_index(0, inplace=True)
 
-# In[3]: len(execution_orderbook_df_index)
-# Out[3]: 1620000
 
 # drop column 1 which stands for order type
 execution_orderbook_df.drop(1, 1, inplace=True)
