@@ -21,7 +21,7 @@ def confusion_table(true, predict):
 
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
 data_input_dir = os.getcwd() + "/data/Attributes/"
-data_output_dir = os.getcwd() + "/Adaboost/"
+data_output_dir = os.getcwd() + "/data/Decision_Tree/"
 
 # read hdf5 file
 print("reading hdf5 file...")
