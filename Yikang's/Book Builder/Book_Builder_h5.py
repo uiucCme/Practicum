@@ -90,12 +90,12 @@ def ten_orderbook_output(time, bid, ask, messageType):
     array_value = [0] * 43
     array_value[0] = time
     array_value[1] = ord(messageType)
-    bid_position = 21
+    bid_position = 2
     ask_position = 23
-    for key in nlargest(10, bid):
-        array_value[bid_position] = bid[key]
-        array_value[bid_position - 1] = key
-        bid_position += -2
+    for key in reversed(nlargest(10, bid)):
+        array_value[bid_position] = key
+        array_value[bid_position + 1] = bid[key]
+        bid_position += 2
     array_value[22] = 999999999
     for key in nsmallest(10, ask):
         array_value[ask_position] = key
@@ -150,7 +150,7 @@ for iteration in trange(len(stock_input)):
             else:
                 ask[order_price] = order_quantity
         order_pool[order_id] = [order_quantity, order_price, order_type]
-        message_record.append([order_time, ord('A'), order_price, order_quantity])
+        message_record.append([order_time, ord('A'), order_price, order_quantity, ord(order_type)])
         # this_order.append(np.string_(str(order_time) + ":" + str(order_quantity) +
         #       " shares of order has been added at price " + str(order_price)))
 
@@ -173,7 +173,7 @@ for iteration in trange(len(stock_input)):
             else:
                 ask[order_price] = order_quantity
         order_pool[order_id] = [order_quantity, order_price, order_type]
-        message_record.append([order_time, ord('F'), order_price, order_quantity])
+        message_record.append([order_time, ord('F'), order_price, order_quantity, ord(order_type)])
 
         # this_order.append(np.string_(str(order_time) + ":" + str(order_quantity) +
         #       " shares of order has been added at price " + str(order_price)))
@@ -202,7 +202,7 @@ for iteration in trange(len(stock_input)):
 
         if order_pool[order_id][0] <= 0:
             del order_pool[order_id]
-        message_record.append([order_time, ord('E'), order_price, executed_quantity])
+        message_record.append([order_time, ord('E'), order_price, executed_quantity, ord(order_type)])
 
     elif message.Message_Type == 'C':
         information = price_order_excuted_handler(message)
@@ -227,7 +227,7 @@ for iteration in trange(len(stock_input)):
 
         if order_pool[order_id][0] <= 0:
             del order_pool[order_id]
-        message_record.append([order_time, ord('C'), information['price'], executed_quantity])
+        message_record.append([order_time, ord('C'), information['price'], executed_quantity, ord(order_type)])
 
 
     elif message.Message_Type == 'U':
@@ -260,7 +260,7 @@ for iteration in trange(len(stock_input)):
                 ask[new_price] += new_quantity
             else:
                 ask[new_price] = new_quantity
-        message_record.append([order_time, ord('U'), new_price, new_quantity])
+        message_record.append([order_time, ord('U'), new_price, new_quantity, ord(old_type)])
 
 
         # this_order.append(np.string_(str(order_time) + ": " + str(old_quantity) +
@@ -288,7 +288,7 @@ for iteration in trange(len(stock_input)):
         #       " shares of order has been deleted at price " + str(order_price)))
 
         del order_pool[order_to_delete]
-        message_record.append([order_time, ord('D'), order_price, delete_quantity])
+        message_record.append([order_time, ord('D'), order_price, delete_quantity, ord(order_type)])
 
 
     elif message.Message_Type == 'X':
@@ -313,7 +313,7 @@ for iteration in trange(len(stock_input)):
 
         if order_pool[order_to_cancel][0] <= 0:
             del order_pool[order_to_cancel]
-        message_record.append([order_time, ord('X'), order_price, cancel_quantity])
+        message_record.append([order_time, ord('X'), order_price, cancel_quantity, ord(order_type)])
 
 
     else:

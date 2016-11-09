@@ -2,13 +2,14 @@ from sklearn.externals.six.moves import zip
 import matplotlib.pyplot as plt
 import pydotplus
 from sklearn.ensemble import AdaBoostClassifier
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, confusion_matrix
 from sklearn.tree import DecisionTreeClassifier
 import pandas as pd
+import numpy as np
 import os
+import itertools
 
-
-ALGORITHM_ROUND = 4
+ALGORITHM_ROUND = 50
 TREE_DEPTH = 3
 
 
@@ -26,24 +27,54 @@ def confusion_table(true, predict):
          confusion_table[1].iloc[2]) / confusion_table['All'].iloc[3]]
     return confusion_table
 
+def plot_confusion_matrix(cm, classes,
+                          normalize=False,
+                          title='Confusion matrix',
+                          cmap=plt.cm.Blues):
+    """
+    This function prints and plots the confusion matrix.
+    Normalization can be applied by setting `normalize=True`.
+    """
+    plt.imshow(cm, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(classes))
+    plt.xticks(tick_marks, classes, rotation=45)
+    plt.yticks(tick_marks, classes)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        print("Normalized confusion matrix")
+    else:
+        print('Confusion matrix, without normalization')
+
+    print(cm)
+
+    thresh = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        plt.text(j, i, cm[i, j],
+                 horizontalalignment="center",
+                 color="white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+
 
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/")
-data_input_dir = os.getcwd() + "/data/random_forest/"
+data_input_dir = os.getcwd() + "/data/Attributes/"
 data_output_dir = os.getcwd() + "/Github Code/Yikang's/Adaboost/"
 
-# read hdf5 file
-print("reading hdf5 file...")
-data = pd.read_csv(data_input_dir + "Attributes_10_20_lag30000.csv")
+# read data
+print("reading data file...")
+data = pd.read_csv(data_input_dir + "30klabeled.csv")
 data.drop(0, 0, inplace=True)
-Y1 = data['direction.by.midp']  # predict direction by mid price
-Y2 = data['direction.by.e']
-X = data.drop(['0', 'mid.price', 'future.mid.price', 'direction.by.midp',
-               'direction.by.e'], 1)
+Y1 = data['y']  # predict direction by mid price
+X = data.drop(['y'], 1)
 n_split = 4000
 
 X_train, X_test = X[:n_split], X[n_split:]
 Y1_train, Y1_test = Y1[:n_split], Y1[n_split:]
-Y2_train, Y2_test = Y2[:n_split], Y2[n_split:]
 
 print("start fitting...")
 bdt_real = AdaBoostClassifier(
@@ -119,7 +150,23 @@ plt.xlim((-20, n_trees_discrete + 20))
 plt.subplots_adjust(wspace=0.25)
 plt.show()
 
-print('adaboost_real:')
-print(confusion_table(Y1_test, bdt_real.predict(X_test)))
-print('adaboost_discrete')
-print(confusion_table(Y1_test, bdt_discrete.predict(X_test)))
+# Compute confusion matrix
+cnf_matrix = confusion_matrix(Y1_test, bdt_real.predict(X_test))
+np.set_printoptions(precision=2)
+
+# Plot non-normalized confusion matrix
+plt.figure()
+plot_confusion_matrix(cnf_matrix, classes=[-2,-1,0,1,2],
+                      title='Confusion matrix, without normalization')
+
+# Plot normalized confusion matrix
+plt.figure()
+plot_confusion_matrix(cnf_matrix, classes=[-2,-1,0,1,2], normalize=True,
+                      title='Normalized confusion matrix')
+
+plt.show()
+
+# print('adaboost_real:')
+# print(confusion_table(Y1_test, bdt_real.predict(X_test)))
+# print('adaboost_discrete')
+# print(confusion_table(Y1_test, bdt_discrete.predict(X_test)))

@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import h5py
 from bisect import bisect_left
-_LAG = 1000000
+
 
 
 def time_to_nanosecond(input_time_string):
@@ -91,125 +91,127 @@ def takeClosest(myNumber, myList):
     before = myList[pos - 1]
     return before
 
-
+#_LAG = 1000000
 
 # os.chdir("D:/SkyDrive/Documents/UIUC/CME Fall 2016")
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016")
 data_input_dir = os.getcwd() + "/data/order_book/"
 data_output_dir = os.getcwd() + "/data/Attributes/"
+for _LAG in np.linspace(5000, 1000000, 10):
+    # read hdf5 file
+    print("reading hdf5 file...")
+    with h5py.File(data_input_dir + "/order_book.hdf5", 'r') as f:
+        order_book = f['SPY/orderbook'][:]
+        record = f['SPY/record'][:]
 
-# read hdf5 file
-print("reading hdf5 file...")
-with h5py.File(data_input_dir + "/order_book.hdf5", 'r') as f:
-    order_book = f['SPY/orderbook'][:]
-    record = f['SPY/record'][:]
-
-# transfer np.array to pdans dataframe, for easy cleaning purpose
-orderbook_df = pd.DataFrame(order_book)
-record_df = pd.DataFrame(record)
-orderbook_df[22] = 0.5 * (orderbook_df[20] + orderbook_df[23])
-
-
-# plot bid ask spread
-# bid_ask_spread = orderbook_df[23] - orderbook_df[20]
-# bid_ask_spread = bid_ask_spread[abs(bid_ask_spread)<0.1]
-# plt.hist(bid_ask_spread, bins=200)
-# plt.show()
+    # transfer np.array to pdans dataframe, for easy cleaning purpose
+    orderbook_df = pd.DataFrame(order_book)
+    record_df = pd.DataFrame(record)
+    orderbook_df[22] = 0.5 * (orderbook_df[20] + orderbook_df[23])
 
 
-# step 1: get the data and transfer it to data frame, from 10:30:00 to 15:30:00
-time_to_start = '10:30:00'
-time_to_end = '15:00:00'
-execution_orderbook_df = data_cleaning(orderbook_df, time_to_start,
-                                       time_to_end, True)
-execution_record_df = data_cleaning(record_df, time_to_start,
-                                    time_to_end, True)
-
-orderbook_df.set_index(0, inplace=True)
-execution_orderbook_df.set_index(0, inplace=True)
-execution_record_df.set_index(0, inplace=True)
+    # plot bid ask spread
+    # bid_ask_spread = orderbook_df[23] - orderbook_df[20]
+    # bid_ask_spread = bid_ask_spread[abs(bid_ask_spread)<0.1]
+    # plt.hist(bid_ask_spread, bins=200)
+    # plt.show()
 
 
-# drop column 1 which stands for order type
-execution_orderbook_df.drop(1, 1, inplace=True)
-execution_record_df.drop(1, 1, inplace=True)
-# Start build training attributes
-execution_orderbook_df = execution_orderbook_df[[22]
-                                                + list(range(2, 22))
-                                                + list(
-    range(23, execution_orderbook_df.columns[-1] + 1))]
-execution_orderbook_pctchange_df = execution_orderbook_df.pct_change(1)
-execution_record_pctchange_df = execution_record_df.pct_change(1)
+    # step 1: get the data and transfer it to data frame, from 10:30:00 to 15:30:00
+    time_to_start = '10:30:00'
+    time_to_end = '15:00:00'
+    execution_orderbook_df = data_cleaning(orderbook_df, time_to_start,
+                                           time_to_end, True)
+    execution_record_df = data_cleaning(record_df, time_to_start,
+                                        time_to_end, True)
 
-# caculate the mid price between best bid and best ask
-Y = pd.DataFrame(index=execution_record_df.index,
-                 columns=['future.mid.price', 'direction.by.midp', 'direction.by.e'])
-
-timestamp_needed = []
-for i in np.array(execution_record_df.index)+_LAG:
-    timestamp_needed.append(takeClosest(i, orderbook_df.index))
-print('found all future timestamp!')
-search_df = orderbook_df.groupby(orderbook_df.index).last()
-Y['future.mid.price'] = search_df.loc[list(timestamp_needed)][22].tolist()
+    orderbook_df.set_index(0, inplace=True)
+    execution_orderbook_df.set_index(0, inplace=True)
+    execution_record_df.set_index(0, inplace=True)
 
 
-execution_record_df.columns = ['exe.p', 'exe.v']
-execution_record_pctchange_df.columns = ['exe.p.d', 'exe.v.c']
+    # drop column 1 which stands for order type
+    execution_orderbook_df.drop(1, 1, inplace=True)
+    execution_record_df.drop(1, 1, inplace=True)
+    # Start build training attributes
+    execution_orderbook_df = execution_orderbook_df[[22]
+                                                    + list(range(2, 22))
+                                                    + list(
+        range(23, execution_orderbook_df.columns[-1] + 1))]
+    execution_orderbook_pctchange_df = execution_orderbook_df.pct_change(1)
+    execution_record_pctchange_df = execution_record_df.pct_change(1)
+
+    # caculate the mid price between best bid and best ask
+    Y = pd.DataFrame(index=execution_record_df.index,
+                     columns=['future.mid.price', 'direction.by.midp', 'direction.by.e'])
+
+    timestamp_needed = []
+
+
+    for i in np.array(execution_record_df.index)+_LAG:
+        timestamp_needed.append(takeClosest(i, orderbook_df.index))
+    print('found all future timestamp!')
+    search_df = orderbook_df.groupby(orderbook_df.index).last()
+    Y['future.mid.price'] = search_df.loc[list(timestamp_needed)][22].tolist()
+
+
+    execution_record_df.columns = ['exe.p', 'exe.v']
+    execution_record_pctchange_df.columns = ['exe.p.d', 'exe.v.c']
 
 
 
-order_book_column = []
-order_book_column.append("mid.price")
-for i in reversed(range(1, 11)):
-    order_book_column.append('best.bid.p.' + str(i))
-    order_book_column.append('best.bid.q.' + str(i))
-for i in range(1, 11):
-    order_book_column.append('best.ask.p.' + str(i))
-    order_book_column.append('best.ask.q.' + str(i))
-execution_orderbook_df.columns = order_book_column
+    order_book_column = []
+    order_book_column.append("mid.price")
+    for i in reversed(range(1, 11)):
+        order_book_column.append('best.bid.p.' + str(i))
+        order_book_column.append('best.bid.q.' + str(i))
+    for i in range(1, 11):
+        order_book_column.append('best.ask.p.' + str(i))
+        order_book_column.append('best.ask.q.' + str(i))
+    execution_orderbook_df.columns = order_book_column
 
-order_book_pctc_column = []
-order_book_pctc_column.append("mid.price.c")
-for i in reversed(range(1, 11)):
-    order_book_pctc_column.append('best.bid.p.c' + str(i))
-    order_book_pctc_column.append('best.bid.q.c' + str(i))
-for i in range(1, 11):
-    order_book_pctc_column.append('best.ask.p.c' + str(i))
-    order_book_pctc_column.append('best.ask.q.c' + str(i))
-execution_orderbook_pctchange_df.columns = order_book_pctc_column
+    order_book_pctc_column = []
+    order_book_pctc_column.append("mid.price.c")
+    for i in reversed(range(1, 11)):
+        order_book_pctc_column.append('best.bid.p.c' + str(i))
+        order_book_pctc_column.append('best.bid.q.c' + str(i))
+    for i in range(1, 11):
+        order_book_pctc_column.append('best.ask.p.c' + str(i))
+        order_book_pctc_column.append('best.ask.q.c' + str(i))
+    execution_orderbook_pctchange_df.columns = order_book_pctc_column
 
-# caluclate the imbalance rate
-print("calulating  imbalance rate...")
-imbalance_df = pd.DataFrame(index=execution_orderbook_df.index)
-for i in range(1, 11):
-    imbalance_df['imbalance.' +
-str(i)] = np.array(
-get_imbalance_rate(execution_orderbook_df, i))
+    # caluclate the imbalance rate
+    print("calulating  imbalance rate...")
+    imbalance_df = pd.DataFrame(index=execution_orderbook_df.index)
+    for i in range(1, 11):
+        imbalance_df['imbalance.' +
+    str(i)] = np.array(
+    get_imbalance_rate(execution_orderbook_df, i))
 
-# merge output
-output_df = Y.join(execution_record_df)
-output_df = output_df.join(execution_record_pctchange_df)
-output_df = output_df.join(execution_orderbook_df)
-output_df = output_df.join(execution_orderbook_pctchange_df)
-output_df = output_df.join(imbalance_df)
+    # merge output
+    output_df = Y.join(execution_record_df)
+    output_df = output_df.join(execution_record_pctchange_df)
+    output_df = output_df.join(execution_orderbook_df)
+    output_df = output_df.join(execution_orderbook_pctchange_df)
+    output_df = output_df.join(imbalance_df)
 
-output_col = list(output_df.columns)
-output_col.remove('mid.price')
-output_col.remove('exe.p')
-output_df = output_df[['mid.price']+['exe.p'] + output_col]
+    output_col = list(output_df.columns)
+    output_col.remove('mid.price')
+    output_col.remove('exe.p')
+    output_df = output_df[['mid.price']+['exe.p'] + output_col]
 
-vgetdirection = np.vectorize(get_direction)
-output_df['direction.by.midp'] = vgetdirection(output_df['future.mid.price'] - output_df['mid.price'])
-output_df['direction.by.e'] = vgetdirection(output_df['future.mid.price'] - output_df['exe.p'])
-output_name = data_output_dir + "Attributes" + time.strftime("_%m_%d") + '_lag' + str(_LAG) + ".csv"
-output_df.to_csv(output_name)
+    vgetdirection = np.vectorize(get_direction)
+    output_df['direction.by.midp'] = vgetdirection(output_df['future.mid.price'] - output_df['mid.price'])
+    output_df['direction.by.e'] = vgetdirection(output_df['future.mid.price'] - output_df['exe.p'])
+    output_name = data_output_dir + "Attributes" + time.strftime("_%m_%d") + '_lag' + str(_LAG) + ".csv"
+    output_df.to_csv(output_name)
 
 
-output_matrix = output_df.as_matrix()
-with h5py.File(data_input_dir + "/order_book.hdf5", 'r+') as f:
-    f["SPY/Attributes" + time.strftime("_%m_%d")] = output_matrix
+    output_matrix = output_df.as_matrix()
+    #with h5py.File(data_input_dir + "/order_book.hdf5", 'r+') as f:
+    #   f["SPY/Attributes" + time.strftime("_%m_%d")] = output_matrix
 
-print("finished task!")
+    print("finished task!")
 
 
 
