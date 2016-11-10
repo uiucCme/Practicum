@@ -171,6 +171,10 @@ execution_orderbook_df = execution_orderbook_df.loc[timestamp_needed]
 execution_record_df = execution_record_df.loc[timestamp_needed]
 
 # c) calcluate percentage change of execution order
+
+# 66 : buy signal  83 : sell signal
+# 0.2575: buy to sell
+# -0.2048: sell to buy
 execution_orderbook_pctchange_df = execution_orderbook_df.pct_change(1)
 execution_record_pctchange_df = execution_record_df.pct_change(1)
 
@@ -192,8 +196,8 @@ Y['future.mid.p'] = search_df.loc[list(timestamp_needed)].apply(
     weighted_midprice, 1).tolist()
 
 # step 3: clean the output
-execution_record_df.columns = ['exe.p', 'exe.v']
-execution_record_pctchange_df.columns = ['exe.p.d', 'exe.v.c']
+execution_record_df.columns = ['exe.p', 'exe.v', 'bs.indicator']
+execution_record_pctchange_df.columns = ['exe.p.d', 'exe.v.c', 'bs.c']
 
 order_book_column = []
 order_book_column.append("mid.price")

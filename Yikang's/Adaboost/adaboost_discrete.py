@@ -9,8 +9,8 @@ import numpy as np
 import os
 import itertools
 
-ALGORITHM_ROUND = 50
-TREE_DEPTH = 3
+ALGORITHM_ROUND = 3
+TREE_DEPTH = 4
 
 
 def confusion_table(true, predict):
@@ -158,7 +158,7 @@ np.set_printoptions(precision=2)
 plt.figure()
 plot_confusion_matrix(cnf_matrix, classes=[-2,-1,0,1,2],
                       title='Confusion matrix, without normalization')
-
+plt.show()
 # Plot normalized confusion matrix
 plt.figure()
 plot_confusion_matrix(cnf_matrix, classes=[-2,-1,0,1,2], normalize=True,
@@ -170,3 +170,5 @@ plt.show()
 # print(confusion_table(Y1_test, bdt_real.predict(X_test)))
 # print('adaboost_discrete')
 # print(confusion_table(Y1_test, bdt_discrete.predict(X_test)))
+
+bdt_real.score(X_test, Y1_test)
