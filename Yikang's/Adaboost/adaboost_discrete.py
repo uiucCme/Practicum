@@ -1,4 +1,5 @@
 from sklearn.externals.six.moves import zip
+from sklearn import tree
 import matplotlib.pyplot as plt
 import pydotplus
 from sklearn.ensemble import AdaBoostClassifier
@@ -9,7 +10,7 @@ import numpy as np
 import os
 import itertools
 
-ALGORITHM_ROUND = 3
+ALGORITHM_ROUND = 20
 TREE_DEPTH = 4
 
 
@@ -63,11 +64,11 @@ def plot_confusion_matrix(cm, classes,
 
 os.chdir("/Users/luoy2/OneDrive/Documents/UIUC/CME Fall 2016/")
 data_input_dir = os.getcwd() + "/data/Attributes/"
-data_output_dir = os.getcwd() + "/Github Code/Yikang's/Adaboost/"
+data_output_dir = os.getcwd() + "/data/AdaBoost/"
 
 # read data
 print("reading data file...")
-data = pd.read_csv(data_input_dir + "30klabeled.csv")
+data = pd.read_csv(data_input_dir + "trainset_11_10_dynamic_lag.csv")
 data.drop(0, 0, inplace=True)
 Y1 = data['y']  # predict direction by mid price
 X = data.drop(['y'], 1)
@@ -113,7 +114,7 @@ discrete_estimator_weights = bdt_discrete.estimator_weights_[:n_trees_discrete]
 
 plt.figure(figsize=(15, 5))
 
-plt.subplot(131)
+plt.subplot(121)
 plt.plot(range(1, n_trees_discrete + 1),
          discrete_test_errors, c='black', label='SAMME')
 plt.plot(range(1, n_trees_real + 1),
@@ -171,4 +172,14 @@ plt.show()
 # print('adaboost_discrete')
 # print(confusion_table(Y1_test, bdt_discrete.predict(X_test)))
 
-bdt_real.score(X_test, Y1_test)
+print(bdt_real.score(X_test, Y1_test))
+
+round_count = 0
+for trees in bdt_real.estimators_:
+    dot_data = tree.export_graphviz(trees, out_file=None, filled=True, rounded=True,
+                                    special_characters=True,
+                                    feature_names=X_train.columns)
+    graph = pydotplus.graph_from_dot_data(dot_data)
+    graph.write_pdf(data_output_dir + "tree_round_" + str(round_count) + ".pdf")
+    round_count += 1
+real_test_errors = []

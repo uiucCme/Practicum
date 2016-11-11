@@ -7,6 +7,12 @@ from bisect import bisect_left
 
 _LAG = 30000
 _QUEUE_TIME = 1000
+_MULTISTATE = False
+
+if _MULTISTATE == True:
+    classifier_num = '_5state'
+else:
+    classifier_num = '_3state'
 
 
 def time_to_nanosecond(input_time_string):
@@ -45,22 +51,39 @@ def data_cleaning(df_input, start_time='10:30:00', end_time='15:00:00',
     return df_output
 
 
-def get_direction(input_val):
+def get_direction(input_val, high, low, multistate = True):
     """
 
     :param input_val:
     :return:
     """
-    if input_val == np.nan:
-        return np.nan
-    elif input_val > 0:
-        return 1
-    elif input_val == 0:
-        return 0
-    elif input_val < 0:
-        return -1
+    if multistate == True:
+        if input_val == np.nan:
+            return np.nan
+        elif input_val >= high:
+            return 2
+        elif input_val > 0:
+            return 1
+        elif input_val == 0:
+            return 0
+        elif input_val <= low:
+            return -2
+        elif input_val < 0:
+            return -1
+        else:
+            return np.nan
     else:
-        return np.nan
+        if input_val == np.nan:
+            return np.nan
+        elif input_val > 0:
+            return 1
+        elif input_val == 0:
+            return 0
+        elif input_val < 0:
+            return -1
+        else:
+            return np.nan
+
 
 
 def get_imbalance_rate(df_input, level):
@@ -239,25 +262,32 @@ output_col.remove('mid.price')
 output_col.remove('exe.p')
 output_df = output_df[['mid.price'] + ['exe.p'] + output_col]
 
+price_diff = np.array(output_df['future.mid.p'] - output_df['mid.price'])
+high_q = np.median(price_diff[price_diff>=0])
+low_q = np.median(price_diff[price_diff<=0])
+
 vgetdirection = np.vectorize(get_direction)
-output_df['direction.by.midp'] = vgetdirection(
-    output_df['future.mid.p'] - output_df['mid.price'])
+output_df['direction.by.midp'] = vgetdirection(price_diff, high_q, low_q, _MULTISTATE)
 
 # drop the first row, since the dynamic lag of the first message is unknown
 output_df.drop(output_df.index[0], 0, inplace=True)
-output_name = data_output_dir + "Attributes" + time.strftime(
+output_name = data_output_dir + "Attributes" + classifier_num + time.strftime(
     "_%m_%d") + '_dynamic_lag.csv'
 output_df.to_csv(output_name)
 
 # ouput the pure dataset
 pure_data = output_df.drop(['mid.price', 'exe.p', 'future.mid.p'], 1)
-pure_data.to_csv(data_output_dir + "trainset" + time.strftime(
+pure_data_colname = pure_data.columns.tolist()
+pure_data_colname[0] = 'y'
+pure_data.columns = pure_data_colname
+pure_data.to_csv(data_output_dir + "trainset" + classifier_num + time.strftime(
     "_%m_%d") + '_dynamic_lag.csv', index=False)
 # output_matrix = output_df.as_matrix()
 # with h5py.File(data_input_dir + "/order_book.hdf5", 'r+') as f:
 #     f["SPY/Attributes" + time.strftime("_%m_%d")] = output_matrix
 
 print("finished task!")
+
 
 
 
